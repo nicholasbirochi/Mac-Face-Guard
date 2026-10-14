@@ -13,3 +13,6 @@ private/
 enrollment/
 captures/
 *.log
+xcuserdata/
+*.xcuserstate
+*.provisionprofile

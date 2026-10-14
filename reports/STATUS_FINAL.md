@@ -1,54 +1,49 @@
-# Estado real — MacFaceGuard 0.1.2
+# Estado real — MacFaceGuard 0.1.3
 
-Data: 14/10/2026. Protótipo experimental nativo para desenvolvimento local.
+Data: 14/10/2026. Aplicativo experimental instalado. A interface confirmou **cadastro local encontrado**; o desenvolvedor não decifrou nem inspecionou o cadastro facial.
 
-## Implementado e compilado
+## Implementado
 
-- UI SwiftUI em português: cadastro, comparação, privacidade e barra de menus. Interface aberta e verificada via acessibilidade e imagem, com câmera desligada.
-- Captura AVFoundation da câmera integrada sob consentimento e permissão, quadros somente em memória, uma face, qualidade mínima e pose via Vision.
-- Cadastro em três posições com Touch ID; guarda somente descritores genéricos de imagem, revisão e versão.
-- Comparação de distância de feature prints, explicitamente experimental, sem limiar de identidade.
-- AES-256-GCM com AAD, nonce aleatório e verificação de integridade. Chave no Chaves com biometria atual, sem sincronização e restrição ao dispositivo.
-- Cofre fora do projeto/OneDrive/Git, diretório 0700, arquivo 0600 e exclusão de backup solicitada. Exclusão de chave e cadastro exige Touch ID.
-- Cadastro limitado a 90 segundos e comparação a 45 segundos, descarte de referências ao parar, suspensão/saída/fechamento desligam a câmera.
-- Registro de abertura no login via SMAppService confirmado por `LOGIN_ITEM_ENABLED`, câmera desligada na inicialização.
-- `.app` release arm64 instalado em `~/Applications/MacFaceGuard.app`, assinatura ad hoc verificada no destino; sem notarização/Developer ID. Entrega em ZIP para evitar metadados de sincronização no pacote.
+- SwiftUI em português: cadastro, comparação visual, privacidade e barra de menus.
+- Câmera integrada sob consentimento, quadros em memória, uma face, captura frontal e dois lados.
+- Guia sobre a câmera, feedback de luz/posição, etapas, som e barra de movimento nariz/olhos relativa à posição frontal. Deduplicação conservadora de caixas quase idênticas preserva rostos distintos.
+- Cadastro exige Touch ID; o Chaves é verificado antes da câmera.
+- AES-256-GCM com AAD e nonce aleatório. Chave em data protection keychain, sem sincronização, WhenUnlockedThisDeviceOnly e biometryCurrentSet.
+- Arquivo privado fora do projeto/OneDrive/Git, permissões 0700/0600, escrita atômica e exclusão de backup solicitada.
+- Cadastro até 90 segundos, comparação até 45; câmera para ao sair, fechar ou suspender.
+- Projeto Xcode com assinatura Apple Development, perfil e grupo próprio do Chaves; hardened runtime e autorização de câmera. Os certificados e perfis não entram no Git.
+- Abertura após login via SMAppService; câmera desligada. Não altera autenticação do sistema.
 
-## Validação executada
+## Evidências
 
-- Starter: `swift test`, 10 testes aprovados; `swift run MacFaceGuardDemo` recusou evidência simulada sem vivacidade.
-- Projeto: `swift test --disable-sandbox --scratch-path /private/tmp/macfaceguard-build`, 22 testes, zero falhas. Caches de módulos temporários definidos devido ao sandbox de desenvolvimento.
-- `bash scripts/build-app.sh`: build release local e `codesign --verify --deep --strict` aprovados.
-- `sw_vers`: macOS 26.7; `xcodebuild -version`: Xcode 27.0; `swift --version`: Swift 6.4.
-- Interface inicial inspecionada com a câmera desligada, consentimento e botão de cadastro visíveis. Versão corrigida reaberta na pasta Applications.
-- A pasta sincronizada acrescentou FinderInfo ao pacote `.app`; a distribuição final usa ZIP criado a partir de pacote assinado em diretório temporário. A instalação copia diretamente desse pacote e passou no `codesign --verify --deep --strict`.
+- macOS 26.7, Xcode 27.0, Swift 6.4, arm64.
+- Starter: 10 testes aprovados; demo simulada recusou vivacidade ausente. Projeto: 22 testes, zero falhas.
+- Projeto Xcode compilou com assinatura desativada para verificar código durante a preparação.
+- Usuário executou o instalador local depois de a revisão automática ficar indisponível por limite. A verificação posterior encontrou v0.1.3 e perfil de provisionamento no app instalado.
+- `codesign --verify --deep --strict ~/Applications/MacFaceGuard.app`: aprovado fora do sandbox do agente. A checagem dentro desse sandbox retornou CSSMERR_TP_NOT_TRUSTED; o resultado completo fora dele resolveu a dúvida.
+- `MacFaceGuard --self-check-keychain`: retornou KEYCHAIN_PROTECTION_VERIFIED. Criação de item sintético protegido, recusa de leitura sem biometria e remoção verificadas. Nenhuma chave real foi lida.
+- Estado textual da UI: v0.1.3, cadastro protegido/local encontrado, câmera desligada. Nenhuma imagem da câmera foi capturada pelo desenvolvedor.
 
-## Correção de integração
+## Correções relevantes
 
-O primeiro teste humano revelou uma condição de corrida: o retorno do Touch ID podia ocorrer antes de a janela recuperar foco. A versão corrigida mantém a sessão autorizada pendente e só inicia a câmera quando o aplicativo fica ativo. Dois testes de regressão cobrem a devolução tardia de foco, cancelamento e eventos de sessões antigas. A mensagem de erro prematura foi removida.
+O retorno do Touch ID antes da recuperação de foco foi tratado com sessão pendente até ativar a janela. A leitura lateral passou a aceitar qualquer lado, depois exigir o oposto; nariz/olhos e barra de progresso melhoraram o guia.
 
-## Guia de captura v0.1.2
+O erro -34018 ocorreu ao salvar a chave sem autorização na assinatura. A v0.1.3 usa explicitamente o backend de proteção de dados, projeto Xcode com provisionamento e preflight antes da câmera. Um diagnóstico sintético mostrou que o backend legado podia permitir leitura sem autenticação; ele não foi usado como fallback.
 
-Instruções, setas, etapas e feedback de luz/posição aparecem sobre a câmera. A primeira virada aceita qualquer lado; a última exige sinal oposto, evitando ambiguidade da imagem espelhada. Qualidade mínima experimental diferencia frente de lateral, pois Vision penaliza rotação. Viradas pequenas são aceitas, há confirmação sonora e 90 segundos para o cadastro. Dois testes adicionais cobrem direções espelhadas e qualidade lateral, incluindo valores inválidos. Ajustes são de captura experimental, não validação biométrica.
+Pastas sincronizadas acrescentaram FinderInfo ao pacote. O build assina em diretório temporário e entrega ZIP; instalação fora da sincronização.
 
-## Movimento lateral v0.1.2
+## Não implementado / não validado
 
-Leitura lateral usa deslocamento relativo do nariz entre os olhos, calibrado no quadro frontal, com fallback ao ângulo do Vision quando os pontos não estavam disponíveis no início. Se pontos desaparecem durante a virada, pede que os dois olhos permaneçam visíveis e não captura. Uma barra mostra avanço do movimento. Caixas quase idênticas da mesma detecção são deduplicadas; caixas separadas, parcialmente sobrepostas ou contidas continuam contando como rostos distintos. A qualidade é associada à caixa da face selecionada. Três testes adicionais cobrem movimento pequeno, translação, dados inválidos e preservação de rostos distintos. Esses controles continuam experimentais e não são prova de vida.
-
-## Não validado / não implementado
-
-- Cadastro/decifra/exclusão com o Touch ID e rosto do proprietário dependem da interação dele; não foi automatizada nem observada a câmera. Testes unitários validam a cifra, não a integração real do Chaves/Touch ID.
-- Modelo de reconhecimento facial e detector PAD: não implementados. Feature prints da Apple não verificam identidade.
-- Prova de vida, FAR/FRR, FMR/FNMR, APCER/BPCER, desempenho/bateria e resistência a fotos, telas, vídeo/deepfake: não medidos.
-- Autorização: sempre recusada pelo adaptador real (`identityMatched: false`, `livenessPassed: false`). O sucesso do teste unitário do núcleo é somente cenário sintético.
-- Desbloqueio do sistema: não implementado. Nenhuma senha coletada, nenhum mecanismo de login modificado.
-- API de modelo externo/conversão Core ML e autenticação via iPhone: não implementadas. Nenhum peso ou binário externo baixado.
-- Reinício completo do Mac para testar relançamento no login: não realizado.
+- Reconhecimento de identidade facial e detector PAD: não implementados. Feature prints são descritores genéricos de imagem.
+- Autorização: sempre recusada pelo adaptador real, com identityMatched e livenessPassed falsos. O caso de sucesso dos testes do núcleo é sintético.
+- Desbloqueio do macOS, tela de bloqueio e FileVault: não implementados. Abrir no login significa depois de entrar no sistema.
+- Decifra/comparação/exclusão do cadastro real com o proprietário: não verificadas nesta inspeção; a presença do arquivo foi confirmada pela UI.
+- Métricas FMR/FNMR/APCER/BPCER, resistência a foto/tela/vídeo, desempenho e bateria: não medidos.
+- Reinício do Mac para validar relançamento: não realizado.
+- Modelo externo, conversão Core ML, iPhone e notarização: não implementados.
 
 ## Riscos e remoção
 
-Descritores faciais continuam sensíveis mesmo sem fotos. Proteção depende do macOS/Chaves; um processo comprometido no mesmo usuário ou no SO fica fora da garantia. A marcação de exclusão de backup não controla ferramentas que a ignoram. Recompilações com assinatura ad hoc podem pedir novas permissões. Alterar as digitais pode invalidar a chave.
+Descritores faciais continuam sensíveis. Um processo comprometido no usuário/SO fica fora da garantia; a exclusão de backup não controla ferramentas que a ignoram. Alterar as digitais pode invalidar a chave. Exclua cadastro e chave e desative a inicialização em Privacidade antes de remover o app.
 
-Remova cadastro/chave e desative a inicialização na tela Privacidade antes de excluir o aplicativo. Instruções de recuperação manual estão no README.
-
-Próxima etapa técnica: modelo facial e PAD com proveniência e licença verificadas, seguido de avaliação consentida e métricas; até lá, não autorizar acesso.
+Próxima etapa técnica: modelo facial e PAD com licença/proveniência e avaliação consentida, antes de qualquer autorização.
