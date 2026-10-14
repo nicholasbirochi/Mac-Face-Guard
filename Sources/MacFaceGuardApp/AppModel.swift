@@ -66,7 +66,8 @@ final class AppModel: ObservableObject {
                 throw GuardError.message("Touch ID não confirmou a operação.")
             }
             guard run == operation else { return }
-            if !enrolling {
+            if enrolling { try vault.prepare(context: auth) }
+            else {
                 let record = try vault.load(context: auth)
                 reference = try record.samples.map { data in
                     guard let feature = try NSKeyedUnarchiver.unarchivedObject(ofClass: VNFeaturePrintObservation.self, from: data),

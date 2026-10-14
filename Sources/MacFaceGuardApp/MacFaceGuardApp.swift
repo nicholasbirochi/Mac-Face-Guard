@@ -8,6 +8,16 @@ struct MacFaceGuardApp: App {
     @Environment(\.scenePhase) private var phase
 
     init() {
+        if CommandLine.arguments.contains("--self-check-keychain") {
+            do {
+                try TemplateVault.verifyKeychainProtection()
+                print("KEYCHAIN_PROTECTION_VERIFIED")
+                exit(0)
+            } catch {
+                print(error.localizedDescription)
+                exit(1)
+            }
+        }
         if CommandLine.arguments.contains("--register-login-item") {
             do {
                 try SMAppService.mainApp.register()
@@ -141,7 +151,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.2 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.1.3 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }

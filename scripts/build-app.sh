@@ -1,20 +1,19 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-export CLANG_MODULE_CACHE_PATH="${TMPDIR:-/tmp}/macfaceguard-clang-cache"
-export SWIFTPM_MODULECACHE_OVERRIDE="${TMPDIR:-/tmp}/macfaceguard-swift-cache"
-scratch="${TMPDIR:-/tmp}/macfaceguard-build-release"
-swift build --scratch-path "$scratch" -c release
-bin_dir="$(swift build --scratch-path "$scratch" -c release --show-bin-path)"
-staging="$(mktemp -d "${TMPDIR:-/tmp}/macfaceguard-package.XXXXXX")"
-app="$staging/MacFaceGuard.app"
-mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp -X "$bin_dir/MacFaceGuard" "$app/Contents/MacOS/MacFaceGuard"
-cp -X scripts/Info.plist "$app/Contents/Info.plist"
-if [[ -f docs/images/AppIcon.icns ]]; then cp -X docs/images/AppIcon.icns "$app/Contents/Resources/AppIcon.icns"; fi
-codesign --force --sign - --identifier com.macfaceguard.local "$app"
+team="$(security find-certificate -c 'Apple Development' -p | openssl x509 -noout -subject | sed -nE 's/.*\/OU=([^/]+).*/\1/p')"
+if [[ -z "$team" ]]; then
+    printf 'É necessário configurar sua equipe Apple de desenvolvimento no Xcode.\n' >&2
+    exit 1
+fi
+scratch="$(mktemp -d "${TMPDIR:-/tmp}/macfaceguard-signed.XXXXXX")"
+xcodebuild -project MacFaceGuard.xcodeproj -scheme MacFaceGuard -configuration Release \
+    -derivedDataPath "$scratch" -destination 'platform=macOS,arch=arm64' \
+    -allowProvisioningUpdates DEVELOPMENT_TEAM="$team" build
+app="$scratch/Build/Products/Release/MacFaceGuard.app"
 codesign --verify --deep --strict "$app"
+# Não distribua uma compilação que não consiga proteger a chave com presença biométrica.
+"$app/Contents/MacOS/MacFaceGuard" --self-check-keychain
 mkdir -p dist
-# Pastas sincronizadas acrescentam FinderInfo ao .app; o ZIP preserva o pacote assinado.
 ditto -c -k --norsrc --keepParent "$app" dist/MacFaceGuard.zip
 printf 'App local compilado: %s\nPacote: %s/dist/MacFaceGuard.zip\n' "$app" "$PWD"

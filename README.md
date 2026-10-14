@@ -6,11 +6,17 @@ Laboratório nativo de cadastro facial local para macOS. Interface em português
 
 *Ilustração representativa da interface implementada, sem imagens ou dados pessoais; não é captura de tela.*
 
-## Estado real: v0.1.2 experimental
+## Estado real: v0.1.3 experimental
 
 O app permite **cadastrar descritores visuais do rosto** e comparar a distância entre imagens usando `VNGenerateImageFeaturePrintRequest` da Apple. Feature prints são descritores de imagem genéricos: **não são um modelo de reconhecimento de identidade facial**. Não há limiar de identidade, taxa de erro medida ou detector anti-spoofing validado. A decisão de autenticação permanece bloqueada, mesmo se duas imagens forem semelhantes.
 
 Não desbloqueia o macOS, não substitui Touch ID, senha ou FileVault e não solicita nem guarda a senha do Mac. Uma webcam RGB não oferece as garantias do Face ID. Veja [o estado e a validação](reports/STATUS_FINAL.md).
+
+> **Situação atual:** a versão 0.1.3 foi instalada com perfil Apple. Assinatura e autoverificação da proteção do Chaves passaram; a interface confirmou cadastro local encontrado. O reconhecimento de identidade e o desbloqueio do macOS continuam sem implementação. O cadastro completo não foi decifrado pelo desenvolvedor.
+
+## O que ocorre ao bloquear ou reiniciar o Mac
+
+O aplicativo não autentica a tela de bloqueio nem substitui a senha/Touch ID. A abertura automática inicia o app depois de entrar no macOS; a câmera permanece desligada. Cadastro criptografado e comparação visual são operações do próprio app. O adaptador real continua recusando autenticação porque não há modelo facial ou PAD validado.
 
 ## Primeiro cadastro
 
@@ -33,7 +39,7 @@ Em **Comparação**, confirme o consentimento e o Touch ID para observar a dist�
 
 ## Compilar
 
-Requer macOS 15+, Xcode/Swift 6+ e Touch ID configurado para as operações do cadastro. Não há pacotes nem modelos externos para baixar.
+Requer macOS 15+, Xcode/Swift 6+, conta Apple de desenvolvimento configurada no Xcode, certificado/perfil válido e Touch ID. Os controles biométricos do Chaves precisam de autorização na assinatura; uma assinatura ad hoc não serve para esse fluxo. Não há pacotes nem modelos externos para baixar.
 
 ```bash
 swift test
@@ -42,9 +48,9 @@ unzip -q dist/MacFaceGuard.zip -d /tmp/MacFaceGuard-run
 open /tmp/MacFaceGuard-run/MacFaceGuard.app
 ```
 
-O script gera um `.app` temporário com assinatura ad hoc e `dist/MacFaceGuard.zip`. O ZIP evita que metadados de pastas sincronizadas invalidem o pacote. Extraia fora do OneDrive/iCloud. Não inclui Developer ID nem notarização. A compilação usa a arquitetura do Mac atual. A política de confiança do macOS continua ativa.
+O script compila pelo projeto Xcode com assinatura Apple Development e perfil de provisionamento, verifica a proteção do Chaves com um item sintético e só então gera `dist/MacFaceGuard.zip`. O ZIP evita que metadados de pastas sincronizadas invalidem o pacote. Extraia fora do OneDrive/iCloud. Não inclui Developer ID nem notarização. A compilação usa a arquitetura do Mac atual. A política de confiança do macOS continua ativa.
 
-Para instalar para o usuário atual, copie o `.app` para `~/Applications`. Ative **Abrir MacFaceGuard ao entrar no macOS** em **Privacidade** se desejar. Atualizações da assinatura podem exigir nova permissão da câmera ou acesso ao Chaves; esta distribuição é de desenvolvimento.
+Para instalar para o usuário atual, copie o `.app` para `~/Applications`. Ative **Abrir MacFaceGuard ao entrar no macOS** em **Privacidade** se desejar. A versão é de desenvolvimento, sem notarização. O perfil e os certificados locais não pertencem ao Git; o script reutiliza a identidade Apple já instalada.
 
 ## Testes e limites
 
