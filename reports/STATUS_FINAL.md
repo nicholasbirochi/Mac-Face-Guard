@@ -1,4 +1,4 @@
-# Estado real — MacFaceGuard 0.1.1
+# Estado real — MacFaceGuard 0.1.2
 
 Data: 14/10/2026. Protótipo experimental nativo para desenvolvimento local.
 
@@ -17,7 +17,7 @@ Data: 14/10/2026. Protótipo experimental nativo para desenvolvimento local.
 ## Validação executada
 
 - Starter: `swift test`, 10 testes aprovados; `swift run MacFaceGuardDemo` recusou evidência simulada sem vivacidade.
-- Projeto: `swift test --disable-sandbox --scratch-path /private/tmp/macfaceguard-build`, 19 testes, zero falhas. Caches de módulos temporários definidos devido ao sandbox de desenvolvimento.
+- Projeto: `swift test --disable-sandbox --scratch-path /private/tmp/macfaceguard-build`, 22 testes, zero falhas. Caches de módulos temporários definidos devido ao sandbox de desenvolvimento.
 - `bash scripts/build-app.sh`: build release local e `codesign --verify --deep --strict` aprovados.
 - `sw_vers`: macOS 26.7; `xcodebuild -version`: Xcode 27.0; `swift --version`: Swift 6.4.
 - Interface inicial inspecionada com a câmera desligada, consentimento e botão de cadastro visíveis. Versão corrigida reaberta na pasta Applications.
@@ -27,9 +27,13 @@ Data: 14/10/2026. Protótipo experimental nativo para desenvolvimento local.
 
 O primeiro teste humano revelou uma condição de corrida: o retorno do Touch ID podia ocorrer antes de a janela recuperar foco. A versão corrigida mantém a sessão autorizada pendente e só inicia a câmera quando o aplicativo fica ativo. Dois testes de regressão cobrem a devolução tardia de foco, cancelamento e eventos de sessões antigas. A mensagem de erro prematura foi removida.
 
-## Guia de captura v0.1.1
+## Guia de captura v0.1.2
 
 Instruções, setas, etapas e feedback de luz/posição aparecem sobre a câmera. A primeira virada aceita qualquer lado; a última exige sinal oposto, evitando ambiguidade da imagem espelhada. Qualidade mínima experimental diferencia frente de lateral, pois Vision penaliza rotação. Viradas pequenas são aceitas, há confirmação sonora e 90 segundos para o cadastro. Dois testes adicionais cobrem direções espelhadas e qualidade lateral, incluindo valores inválidos. Ajustes são de captura experimental, não validação biométrica.
+
+## Movimento lateral v0.1.2
+
+Leitura lateral usa deslocamento relativo do nariz entre os olhos, calibrado no quadro frontal, com fallback ao ângulo do Vision quando os pontos não estavam disponíveis no início. Se pontos desaparecem durante a virada, pede que os dois olhos permaneçam visíveis e não captura. Uma barra mostra avanço do movimento. Caixas quase idênticas da mesma detecção são deduplicadas; caixas separadas, parcialmente sobrepostas ou contidas continuam contando como rostos distintos. A qualidade é associada à caixa da face selecionada. Três testes adicionais cobrem movimento pequeno, translação, dados inválidos e preservação de rostos distintos. Esses controles continuam experimentais e não são prova de vida.
 
 ## Não validado / não implementado
 

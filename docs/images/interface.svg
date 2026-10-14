@@ -7,7 +7,7 @@
 <rect x="20" y="145" width="205" height="45" rx="10" fill="#21372f"/>
 <text x="42" y="173" font-size="14" fill="#66e0bd">◉  Cadastro</text><text x="42" y="223" font-size="14" fill="#93a0b2">⌖  Comparação</text><text x="42" y="273" font-size="14" fill="#93a0b2">♧  Privacidade</text>
 <rect x="20" y="627" width="205" height="95" rx="12" fill="#0e121b"/>
-<text x="36" y="653" font-size="12" fill="#66e0bd">A chave fica no Chaves</text><text x="36" y="677" font-size="12" fill="#93a0b2">Sem conta, sem nuvem e sem</text><text x="36" y="695" font-size="12" fill="#93a0b2">gravação de fotos ou vídeos.</text><text x="24" y="752" font-size="10" fill="#93a0b2">v0.1.1 • Protótipo experimental</text>
+<text x="36" y="653" font-size="12" fill="#66e0bd">A chave fica no Chaves</text><text x="36" y="677" font-size="12" fill="#93a0b2">Sem conta, sem nuvem e sem</text><text x="36" y="695" font-size="12" fill="#93a0b2">gravação de fotos ou vídeos.</text><text x="24" y="752" font-size="10" fill="#93a0b2">v0.1.2 • Protótipo experimental</text>
 <text x="279" y="50" font-size="11" letter-spacing="1" fill="#93a0b2">ESPAÇO PESSOAL</text><text x="1055" y="50" font-size="12" fill="#66e0bd">100% local</text>
 <text x="279" y="104" font-size="36" font-weight="600">Um rosto. Só neste Mac.</text><text x="279" y="135" font-size="14" fill="#93a0b2">Cadastre seu rosto para explorar a comparação visual com privacidade.</text>
 <g fill="#171c26"><rect x="279" y="165" width="276" height="82" rx="13"/><rect x="570" y="165" width="276" height="82" rx="13"/><rect x="861" y="165" width="305" height="82" rx="13"/></g>
