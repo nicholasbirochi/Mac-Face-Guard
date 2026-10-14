@@ -77,6 +77,7 @@ private let accent = Color(red: 0.40, green: 0.88, blue: 0.74)
 struct ContentView: View {
     @ObservedObject var model: AppModel
     @State private var confirmDelete = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 0) {
@@ -140,7 +141,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.0 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.1.1 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }
@@ -180,8 +181,8 @@ struct ContentView: View {
                     if model.active {
                         CameraPreview(session: model.camera.session)
                         RoundedRectangle(cornerRadius: 95)
-                            .stroke(accent.opacity(0.8), style: StrokeStyle(lineWidth: 1.5, dash: [10, 6]))
-                            .frame(width: 190, height: 250)
+                            .stroke(model.poseReady ? accent : .white.opacity(0.6), style: StrokeStyle(lineWidth: 2, dash: [10, 6]))
+                            .frame(width: 160, height: 200).offset(y: -25)
                             .accessibilityHidden(true)
                     } else {
                         VStack(spacing: 18) {
@@ -200,7 +201,36 @@ struct ContentView: View {
                         }
                         Spacer()
                     }.padding(16)
-                }.frame(height: 322).clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, topTrailingRadius: 15))
+                    if model.active && model.tab == "Cadastro" {
+                        VStack(spacing: 10) {
+                            HStack(spacing: 10) {
+                                ForEach(0..<3) { step in
+                                    ZStack {
+                                        Circle().fill(step < model.sampleCount ? accent : .black.opacity(0.65))
+                                        if step < model.sampleCount {
+                                            Image(systemName: "checkmark").foregroundStyle(ink)
+                                        } else {
+                                            Text("\(step + 1)").foregroundStyle(step == model.sampleCount ? accent : .white.opacity(0.65))
+                                        }
+                                    }.font(.system(size: 12, weight: .bold)).frame(width: 28, height: 28)
+                                }
+                            }.padding(.top, 36)
+                            Spacer()
+                            VStack(spacing: 7) {
+                                HStack(spacing: 9) {
+                                    Image(systemName: model.sampleCount == 0 ? "person.crop.rectangle" : model.sampleCount == 1 ? "arrow.left.and.right" : "arrow.uturn.backward")
+                                        .font(.system(size: 22, weight: .semibold))
+                                        .symbolEffect(.pulse, isActive: !reduceMotion && !model.poseReady)
+                                    Text(model.guidance).font(.system(size: 18, weight: .semibold, design: .rounded))
+                                }.foregroundStyle(accent)
+                                Text(model.captureHint).font(.system(size: 12)).foregroundStyle(.white)
+                            }.multilineTextAlignment(.center).frame(maxWidth: .infinity)
+                                .padding(14).background(.black.opacity(0.80), in: RoundedRectangle(cornerRadius: 13))
+                                .padding(12)
+                        }.accessibilityElement(children: .combine)
+                            .accessibilityLabel("Passo \(model.sampleCount + 1) de 3. \(model.guidance). \(model.captureHint)")
+                    }
+                }.frame(height: 360).clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, topTrailingRadius: 15))
                 VStack(alignment: .leading, spacing: 6) {
                     Text(model.status).font(.system(size: 12, weight: .medium)).lineLimit(2)
                     if let distance = model.distance {
@@ -225,8 +255,8 @@ struct ContentView: View {
                         .font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if model.active {
-                    Text(model.guidance).font(.system(size: 13, weight: .medium)).foregroundStyle(accent).fixedSize(horizontal: false, vertical: true)
-                    if model.tab == "Cadastro" { ProgressView(value: Double(model.sampleCount), total: 3) }
+                    Text(model.tab == "Cadastro" ? "Acompanhe as setas e o progresso na própria imagem." : model.guidance)
+                        .font(.system(size: 13, weight: .medium)).foregroundStyle(accent).fixedSize(horizontal: false, vertical: true)
                     Button("Encerrar sessão") { model.stop() }.buttonStyle(.bordered).controlSize(.large)
                 } else {
                     Toggle(isOn: $model.consent) {
@@ -245,7 +275,7 @@ struct ContentView: View {
                     }.buttonStyle(.borderedProminent).controlSize(.large)
                         .disabled(!model.consent || model.busy || (model.tab == "Comparação" && !model.hasEnrollment))
                 }
-                Text("Requer Touch ID configurado. Sessões duram até 45 segundos e param ao sair do app.")
+                Text("Requer Touch ID. Cadastro: até 90 segundos. Comparação: até 45 segundos. A câmera para ao sair do app.")
                     .font(.system(size: 10)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(20).frame(width: 250, alignment: .leading)
                 .background(panel, in: RoundedRectangle(cornerRadius: 15))

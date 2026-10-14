@@ -6,7 +6,7 @@ Laboratório nativo de cadastro facial local para macOS. Interface em português
 
 *Ilustração representativa da interface implementada, sem imagens ou dados pessoais; não é captura de tela.*
 
-## Estado real: v0.1.0 experimental
+## Estado real: v0.1.1 experimental
 
 O app permite **cadastrar descritores visuais do rosto** e comparar a distância entre imagens usando `VNGenerateImageFeaturePrintRequest` da Apple. Feature prints são descritores de imagem genéricos: **não são um modelo de reconhecimento de identidade facial**. Não há limiar de identidade, taxa de erro medida ou detector anti-spoofing validado. A decisão de autenticação permanece bloqueada, mesmo se duas imagens forem semelhantes.
 
@@ -17,7 +17,7 @@ Não desbloqueia o macOS, não substitui Touch ID, senha ou FileVault e não sol
 1. Abra `MacFaceGuard.app` no Mac.
 2. Em **Cadastro**, marque o consentimento e clique **Cadastrar meu rosto**.
 3. Confirme com Touch ID e autorize a câmera no diálogo do macOS.
-4. Olhe de frente e depois levemente para cada lado. A sessão expira em 45 segundos.
+4. Olhe de frente e depois levemente para cada lado. O cadastro expira em 90 segundos; as instruções e setas aparecem sobre a câmera, com confirmação sonora por amostra.
 5. O app confirma quando os três descritores forem criptografados. A câmera desliga.
 
 Em **Comparação**, confirme o consentimento e o Touch ID para observar a distância visual. Um valor menor indica maior semelhança de imagem, sem validar identidade. Em **Privacidade**, é possível excluir cadastro e chave, abrir a configuração da câmera e controlar a abertura no login.
@@ -29,7 +29,7 @@ Em **Comparação**, confirme o consentimento e o Touch ID para observar a dist�
 - Diretório `0700`, arquivo `0600`, escrita atômica e marcação de exclusão de backup. Outros programas que ignoram essa marcação podem copiar o arquivo.
 - Chave AES de 256 bits no Chaves, sem sincronização, com `WhenUnlockedThisDeviceOnly` e controle `biometryCurrentSet`. Alterar o conjunto de digitais pode invalidar o acesso: exclua o cadastro e cadastre novamente.
 - O repositório contém apenas código, testes, documentação e recursos ilustrativos. Não há telemetria, contas, servidor, SDK de terceiros ou código de envio de dados.
-- A inicialização automática abre o app com a câmera **desligada**. Câmera somente após uma ação sua; encerra ao sair do app, fechar a janela, suspender o Mac ou atingir 45 segundos.
+- A inicialização automática abre o app com a câmera **desligada**. Câmera somente após uma ação sua; encerra ao sair do app, fechar a janela, suspender o Mac ou atingir 90 segundos no cadastro / 45 na comparação.
 
 ## Compilar
 

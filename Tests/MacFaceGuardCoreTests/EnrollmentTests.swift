@@ -34,12 +34,32 @@ final class EnrollmentTests: XCTestCase {
     }
 
     func testPoseBoundariesAndNonFiniteValues() {
-        XCTAssertTrue(CapturePose.center.accepts(yaw: 0))
-        XCTAssertTrue(CapturePose.left.accepts(yaw: 0.3))
-        XCTAssertTrue(CapturePose.right.accepts(yaw: -0.3))
-        XCTAssertFalse(CapturePose.left.accepts(yaw: 0))
-        XCTAssertFalse(CapturePose.center.accepts(yaw: .nan))
-        XCTAssertFalse(CapturePose.right.accepts(yaw: -.infinity))
+        XCTAssertTrue(CapturePose.center.accepts(quality: 1, yaw: 0))
+        XCTAssertTrue(CapturePose.eitherSide.accepts(quality: 1, yaw: 0.3))
+        XCTAssertTrue(CapturePose.eitherSide.accepts(quality: 1, yaw: -0.3))
+        XCTAssertFalse(CapturePose.eitherSide.accepts(quality: 1, yaw: 0))
+        XCTAssertFalse(CapturePose.center.accepts(quality: 1, yaw: .nan))
+        XCTAssertFalse(CapturePose.oppositeSide.accepts(quality: 1, yaw: -.infinity))
+    }
+
+    func testSideQualityDoesNotRequireFrontalQualityButInvalidQualityIsRejected() {
+        XCTAssertTrue(CapturePose.eitherSide.accepts(quality: 0.15, yaw: 0.1))
+        XCTAssertFalse(CapturePose.center.accepts(quality: 0.15, yaw: 0))
+        XCTAssertFalse(CapturePose.eitherSide.accepts(quality: 0.09, yaw: 0.1))
+        XCTAssertFalse(CapturePose.eitherSide.accepts(quality: .nan, yaw: 0.1))
+        XCTAssertFalse(CapturePose.eitherSide.accepts(quality: 2, yaw: 0.1))
+    }
+
+    func testSmallTurnsAndMirroredDirectionsAdvanceOnlyToOppositeSide() {
+        for turn in [-0.09, 0.09] {
+            XCTAssertTrue(CapturePose.eitherSide.accepts(quality: 1, yaw: turn))
+            XCTAssertTrue(CapturePose.oppositeSide.accepts(quality: 1, yaw: -turn, firstTurn: turn))
+            XCTAssertFalse(CapturePose.oppositeSide.accepts(quality: 1, yaw: turn, firstTurn: turn))
+            XCTAssertFalse(CapturePose.oppositeSide.accepts(quality: 1, yaw: 0, firstTurn: turn))
+        }
+        XCTAssertFalse(CapturePose.oppositeSide.accepts(quality: 1, yaw: 0.2))
+        XCTAssertFalse(CapturePose.oppositeSide.accepts(quality: 1, yaw: 0.2, firstTurn: .nan))
+        XCTAssertFalse(CapturePose.eitherSide.accepts(quality: 1, yaw: 0.7))
     }
 
     func testExperimentalSimilarityCannotAuthorizeWithoutIdentityAndPAD() {

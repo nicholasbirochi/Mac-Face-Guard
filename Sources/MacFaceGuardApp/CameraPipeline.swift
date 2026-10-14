@@ -103,9 +103,12 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                 let box = face.boundingBox
                 let enoughSize = box.width > 0.18 && box.height > 0.22
                 let inside = box.minX > 0.03 && box.maxX < 0.97 && box.minY > 0.03 && box.maxY < 0.97
-                guard enoughSize, inside, quality >= 0.25, let yaw = face.yaw?.doubleValue else {
-                    callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: 0, print: nil,
-                        capturedAt: now, message: "Aproxime-se, centralize o rosto e procure luz uniforme."))
+                let yaw = face.yaw?.doubleValue
+                // Qualidade do Vision penaliza poses laterais; o cadastro experimental aceita uma virada pequena.
+                guard enoughSize, inside, quality >= 0.10, let yaw, yaw.isFinite else {
+                    let message = !enoughSize ? "Aproxime um pouco o rosto." : !inside ? "Mantenha o rosto inteiro dentro da imagem." : quality < 0.10 ? "Procure mais luz no rosto e vire só um pouco." : "Olhe de frente por um instante para localizar o rosto."
+                    callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw ?? 0, print: nil,
+                        capturedAt: now, message: message))
                     return
                 }
                 let image = CIImage(cvPixelBuffer: pixels)
