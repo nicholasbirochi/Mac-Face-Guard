@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleName</key><string>MacFaceGuard</string>
+<key>CFBundleDisplayName</key><string>MacFaceGuard</string>
+<key>CFBundleIdentifier</key><string>com.macfaceguard.local</string>
+<key>CFBundleExecutable</key><string>MacFaceGuard</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleShortVersionString</key><string>0.1.0</string>
+<key>CFBundleVersion</key><string>1</string>
+<key>CFBundleIconFile</key><string>AppIcon</string>
+<key>LSMinimumSystemVersion</key><string>15.0</string>
+<key>NSHighResolutionCapable</key><true/>
+<key>NSCameraUsageDescription</key><string>O MacFaceGuard usa a câmera integrada, somente quando você inicia uma sessão, para cadastrar descritores locais criptografados e explorar comparação visual. Nenhuma foto ou vídeo é salvo ou enviado.</string>
+<key>NSFaceIDUsageDescription</key><string>Confirme sua presença para gerenciar o cadastro facial local.</string>
+<key>NSPrincipalClass</key><string>NSApplication</string>
+</dict></plist>
