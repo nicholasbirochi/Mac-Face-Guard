@@ -3,6 +3,7 @@ import Foundation
 import Vision
 import CoreImage
 import QuartzCore
+import MacFaceGuardCore
 
 // Vision e AVCaptureSession permanecem na fila serial; só observações imutáveis cruzam para a UI.
 struct FrameAnalysis: @unchecked Sendable {
@@ -10,6 +11,7 @@ struct FrameAnalysis: @unchecked Sendable {
     let count: Int
     let quality: Float
     let yaw: Double
+    let turn: Double?
     let print: VNFeaturePrintObservation?
     let capturedAt: TimeInterval
     let message: String
@@ -58,7 +60,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                 guard session.isRunning else { throw GuardError.message("A câmera não iniciou.") }
             } catch {
                 let message = (error as? GuardError)?.localizedDescription ?? "Falha ao abrir a câmera. Verifique a permissão nos Ajustes do Sistema."
-                callback(FrameAnalysis(run: run, count: -1, quality: 0, yaw: 0, print: nil,
+                callback(FrameAnalysis(run: run, count: -1, quality: 0, yaw: 0, turn: nil, print: nil,
                     capturedAt: CACurrentMediaTime(), message: message))
                 stopOnQueue()
             }
@@ -93,21 +95,26 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                 let qualityRequest = VNDetectFaceCaptureQualityRequest()
                 let handler = VNImageRequestHandler(cvPixelBuffer: pixels, orientation: .up)
                 try handler.perform([faces, qualityRequest])
-                let observations = faces.results ?? []
+                let detected = faces.results ?? []
+                let observations = FaceGeometry.uniqueFaceIndices(detected.map(\.boundingBox)).map { detected[$0] }
                 guard observations.count == 1, let face = observations.first else {
-                    callback(FrameAnalysis(run: run, count: observations.count, quality: 0, yaw: 0, print: nil,
+                    callback(FrameAnalysis(run: run, count: observations.count, quality: 0, yaw: 0, turn: nil, print: nil,
                         capturedAt: now, message: observations.isEmpty ? "Posicione seu rosto na área da câmera." : "Mantenha apenas um rosto na imagem."))
                     return
                 }
-                let quality = qualityRequest.results?.first?.faceCaptureQuality ?? 0
                 let box = face.boundingBox
+                func overlap(_ candidate: VNFaceObservation) -> CGFloat {
+                    let shared = candidate.boundingBox.intersection(box)
+                    return shared.isNull ? 0 : shared.width * shared.height
+                }
+                let quality = qualityRequest.results?.max(by: { overlap($0) < overlap($1) })?.faceCaptureQuality ?? 0
                 let enoughSize = box.width > 0.18 && box.height > 0.22
                 let inside = box.minX > 0.03 && box.maxX < 0.97 && box.minY > 0.03 && box.maxY < 0.97
                 let yaw = face.yaw?.doubleValue
                 // Qualidade do Vision penaliza poses laterais; o cadastro experimental aceita uma virada pequena.
                 guard enoughSize, inside, quality >= 0.10, let yaw, yaw.isFinite else {
                     let message = !enoughSize ? "Aproxime um pouco o rosto." : !inside ? "Mantenha o rosto inteiro dentro da imagem." : quality < 0.10 ? "Procure mais luz no rosto e vire só um pouco." : "Olhe de frente por um instante para localizar o rosto."
-                    callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw ?? 0, print: nil,
+                    callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw ?? 0, turn: nil, print: nil,
                         capturedAt: now, message: message))
                     return
                 }
@@ -122,12 +129,23 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                 guard let feature = request.results?.first as? VNFeaturePrintObservation else {
                     throw GuardError.message("Comparação visual indisponível.")
                 }
-                callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw, print: feature,
+                var turn: Double?
+                if let landmarks = face.landmarks,
+                   let nose = averageX(landmarks.nose),
+                   let left = averageX(landmarks.leftEye), let right = averageX(landmarks.rightEye) {
+                    turn = FaceGeometry.noseOffset(nose: nose, leftEye: left, rightEye: right)
+                }
+                callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw, turn: turn, print: feature,
                     capturedAt: now, message: "Rosto detectado. Siga a orientação ao lado."))
             } catch {
-                callback(FrameAnalysis(run: run, count: 0, quality: 0, yaw: 0, print: nil,
+                callback(FrameAnalysis(run: run, count: 0, quality: 0, yaw: 0, turn: nil, print: nil,
                     capturedAt: now, message: "A análise deste quadro falhou. Nenhuma autorização foi concedida."))
             }
         }
+    }
+
+    private func averageX(_ region: VNFaceLandmarkRegion2D?) -> Double? {
+        guard let points = region?.normalizedPoints, !points.isEmpty else { return nil }
+        return points.reduce(0) { $0 + Double($1.x) } / Double(points.count)
     }
 }

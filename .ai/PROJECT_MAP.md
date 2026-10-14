@@ -1,4 +1,4 @@
-# Mapa do projeto — MacFaceGuard v0.1.1
+# Mapa do projeto — MacFaceGuard v0.1.2
 
 Fonte: código local, 14/10/2026. Mapa manual; não é saída Graphify.
 
@@ -13,3 +13,5 @@ Fonte: código local, 14/10/2026. Mapa manual; não é saída Graphify.
 - `Tests/`: decisões e cifra, registros inválidos, poses e recusa experimental.
 
 Riscos e limites: feature print não verifica identidade; não há PAD, métricas humanas ou desbloqueio do sistema; biometria real depende de interação humana. Nenhum vetor, chave, foto ou vídeo pertence ao repositório.
+
+- `FaceGeometry.swift`: movimento nariz/olhos e deduplicação conservadora de caixas; sem persistência de pontos faciais.

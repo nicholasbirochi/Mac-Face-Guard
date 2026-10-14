@@ -17,6 +17,7 @@ final class AppModel: ObservableObject {
     @Published var sampleCount = 0
     @Published var captureHint = ""
     @Published var poseReady = false
+    @Published var turnProgress: Double = 0
     @Published var faceCount = 0
     @Published var quality: Float = 0
     @Published var distance: Float?
@@ -37,6 +38,7 @@ final class AppModel: ObservableObject {
     private var activation = CaptureActivationGate()
     private var firstTurn: Double?
     private var neutralYaw: Double?
+    private var neutralTurn: Double?
 
     init() {
         hasEnrollment = vault.exists
@@ -89,6 +91,8 @@ final class AppModel: ObservableObject {
             lastCapture = 0
             firstTurn = nil
             neutralYaw = nil
+            neutralTurn = nil
+            turnProgress = 0
             captureHint = "Centralize o rosto na moldura."
             poseReady = false
             activation.prepare(operation)
@@ -133,24 +137,38 @@ final class AppModel: ObservableObject {
             status = frame.message
             captureHint = frame.message
             poseReady = false
+            turnProgress = 0
             distance = nil
             return
         }
         if mode == "enroll" {
             let pose = CapturePose.allCases[samples.count]
             let qualityEnough = frame.quality >= pose.minimumQuality
-            let yaw = samples.isEmpty ? frame.yaw : frame.yaw - (neutralYaw ?? 0)
+            let yaw: Double
+            if samples.isEmpty { yaw = frame.yaw }
+            else if let neutralTurn {
+                guard let turn = frame.turn else {
+                    poseReady = false
+                    turnProgress = 0
+                    captureHint = "Vire menos: mantenha os dois olhos visíveis."
+                    return
+                }
+                yaw = turn - neutralTurn
+            } else { yaw = frame.yaw - (neutralYaw ?? 0) }
             poseReady = pose.accepts(quality: frame.quality, yaw: yaw, firstTurn: firstTurn)
-            captureHint = !qualityEnough ? "Procure mais luz no rosto." : poseReady ? "Posição detectada. Segure um instante…" : samples.isEmpty ? "Olhe de frente e mantenha o rosto centralizado." : samples.count == 1 ? "Pode virar para qualquer lado, só um pouquinho." : "Passe pelo centro e vire um pouco para o outro lado."
+            let correctSide = samples.count != 2 || yaw * (firstTurn ?? 0) < 0
+            turnProgress = samples.isEmpty || !correctSide ? 0 : min(abs(yaw) / 0.08, 1)
+            captureHint = !qualityEnough ? "Procure mais luz no rosto." : poseReady ? "Posição detectada. Segure um instante…" : samples.isEmpty ? "Olhe de frente e mantenha o rosto centralizado." : abs(yaw) > 0.65 ? "Virou demais. Volte um pouco, mantendo os olhos visíveis." : !correctSide ? "Agora para o outro lado, passando pelo centro." : "Vire devagar até a barra completar."
             guard poseReady, frame.capturedAt - lastCapture > 1.2 else { return }
             do {
                 samples.append(try NSKeyedArchiver.archivedData(withRootObject: print, requiringSecureCoding: true))
-                if samples.count == 1 { neutralYaw = frame.yaw }
+                if samples.count == 1 { neutralYaw = frame.yaw; neutralTurn = frame.turn }
                 if samples.count == 2 { firstTurn = yaw }
                 sampleCount = samples.count
                 lastCapture = frame.capturedAt
                 NSSound(named: "Tink")?.play()
                 poseReady = false
+                turnProgress = 0
                 if samples.count == 3 {
                     guard let context else { throw GuardError.message("A sessão de cadastro expirou.") }
                     try vault.save(Enrollment(revision: 2, samples: samples), context: context)
@@ -204,6 +222,8 @@ final class AppModel: ObservableObject {
         poseReady = false
         firstTurn = nil
         neutralYaw = nil
+        neutralTurn = nil
+        turnProgress = 0
         distance = nil
         samples.removeAll()
         reference.removeAll()

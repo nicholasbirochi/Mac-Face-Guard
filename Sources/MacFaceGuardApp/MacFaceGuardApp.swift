@@ -141,7 +141,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.1 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.1.2 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }
@@ -224,6 +224,11 @@ struct ContentView: View {
                                     Text(model.guidance).font(.system(size: 18, weight: .semibold, design: .rounded))
                                 }.foregroundStyle(accent)
                                 Text(model.captureHint).font(.system(size: 12)).foregroundStyle(.white)
+                                if model.sampleCount > 0 {
+                                    ProgressView(value: model.turnProgress).tint(accent)
+                                        .accessibilityLabel("Movimento da cabeça")
+                                        .accessibilityValue("\(Int(model.turnProgress * 100)) por cento")
+                                }
                             }.multilineTextAlignment(.center).frame(maxWidth: .infinity)
                                 .padding(14).background(.black.opacity(0.80), in: RoundedRectangle(cornerRadius: 13))
                                 .padding(12)
