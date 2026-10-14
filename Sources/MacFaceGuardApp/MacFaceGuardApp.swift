@@ -1,0 +1,316 @@
+import SwiftUI
+import AVFoundation
+import ServiceManagement
+
+@main
+struct MacFaceGuardApp: App {
+    @StateObject private var model = AppModel()
+    @Environment(\.scenePhase) private var phase
+
+    init() {
+        if CommandLine.arguments.contains("--register-login-item") {
+            do {
+                try SMAppService.mainApp.register()
+                let status = SMAppService.mainApp.status
+                print(status == .enabled ? "LOGIN_ITEM_ENABLED" : "LOGIN_ITEM_REQUIRES_APPROVAL")
+                exit(status == .enabled ? 0 : 2)
+            } catch {
+                print("LOGIN_ITEM_REGISTRATION_FAILED")
+                exit(1)
+            }
+        }
+    }
+
+    var body: some Scene {
+        Window("MacFaceGuard", id: "main") {
+            ContentView(model: model)
+                .frame(minWidth: 1040, minHeight: 700)
+                .preferredColorScheme(.dark)
+                .onChange(of: phase) { _, phase in
+                    if phase == .active { model.foregrounded() }
+                    else { model.backgrounded() }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    model.foregrounded()
+                }
+                .onReceive(NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.willSleepNotification)) { _ in
+                    model.stop(message: "Sessão encerrada ao suspender o Mac")
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                    model.stop()
+                }
+                .onDisappear { model.stop() }
+                .task {
+                    if CommandLine.arguments.contains("--enable-login-item") { model.setLogin(true) }
+                }
+                .alert("MacFaceGuard", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+                    Button("Entendi", role: .cancel) { model.error = nil }
+                } message: { Text(model.error ?? "") }
+        }
+        .defaultSize(width: 1140, height: 780)
+        .windowResizability(.contentMinSize)
+        MenuBarExtra("MacFaceGuard", systemImage: "faceid") {
+            GuardMenu(model: model)
+        }
+    }
+}
+
+private struct GuardMenu: View {
+    @ObservedObject var model: AppModel
+    @Environment(\.openWindow) private var openWindow
+    var body: some View {
+        Button("Abrir MacFaceGuard") {
+            openWindow(id: "main")
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        if model.active { Button("Desligar câmera") { model.stop() } }
+        Divider()
+        Text("Cadastro facial local • experimental")
+        Button("Sair") { model.stop(); NSApp.terminate(nil) }.keyboardShortcut("q")
+    }
+}
+
+private let ink = Color(red: 0.055, green: 0.071, blue: 0.105)
+private let panel = Color(red: 0.09, green: 0.11, blue: 0.15)
+private let accent = Color(red: 0.40, green: 0.88, blue: 0.74)
+
+struct ContentView: View {
+    @ObservedObject var model: AppModel
+    @State private var confirmDelete = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            sidebar
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack {
+                        Label("ESPAÇO PESSOAL", systemImage: "laptopcomputer")
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                        Spacer()
+                        Label("100% local", systemImage: "lock.shield.fill").font(.system(size: 12)).foregroundStyle(accent)
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(model.tab == "Privacidade" ? "Seu rosto. Seu controle." : "Um rosto. Só neste Mac.")
+                            .font(.system(size: 34, weight: .semibold, design: .rounded))
+                        Text(model.tab == "Privacidade" ? "Veja o que é salvo e escolha o que permanece." : "Cadastre seu rosto para explorar a comparação visual com privacidade.")
+                            .font(.system(size: 14)).foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 12) {
+                        metric("CADASTRO", value: model.hasEnrollment ? "Protegido" : "Não cadastrado", icon: "person.crop.circle")
+                        metric("ARMAZENAMENTO", value: "AES-256-GCM", icon: "lock.fill")
+                        metric("CÂMERA", value: model.active ? "Ligada · 2 análises/s" : "Desligada", icon: "camera")
+                    }
+                    if model.tab == "Privacidade" { privacy }
+                    else { capture }
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "flask.fill").foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Laboratório de comparação visual").font(.system(size: 13, weight: .semibold))
+                            Text("Ainda não há reconhecimento facial nem prova de vida validados. A comparação usa descritores de imagem do Vision e não autoriza acesso. Este app não desbloqueia o macOS.")
+                                .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        }
+                    }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.orange.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
+                }.padding(30)
+            }.background(ink)
+        }
+        .tint(accent)
+        .confirmationDialog("Excluir o cadastro facial e a chave deste Mac?", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("Excluir definitivamente", role: .destructive) { Task { await model.deleteEnrollment() } }
+        } message: { Text("O Touch ID confirma a exclusão. Essa ação não pode ser desfeita.") }
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 28) {
+            HStack(spacing: 10) {
+                Image(systemName: "faceid").font(.system(size: 30, weight: .light)).foregroundStyle(accent)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("MacFaceGuard").font(.system(size: 16, weight: .semibold, design: .rounded))
+                    Text("PERSONAL FACE LAB").font(.system(size: 8, weight: .medium, design: .monospaced)).tracking(1.5).foregroundStyle(.secondary)
+                }
+            }.padding(.top, 14)
+            VStack(spacing: 6) {
+                nav("Cadastro", icon: "person.crop.rectangle.badge.plus")
+                nav("Comparação", icon: "viewfinder")
+                nav("Privacidade", icon: "hand.raised")
+            }
+            Spacer()
+            VStack(alignment: .leading, spacing: 10) {
+                Label("A chave fica no Chaves", systemImage: "key.fill").font(.system(size: 12, weight: .medium)).foregroundStyle(accent)
+                Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
+                    .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
+            Text("v0.1.0 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+        }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
+            .background(panel)
+    }
+
+    private func nav(_ title: String, icon: String) -> some View {
+        Button {
+            if model.active || model.busy { model.stop() }
+            model.tab = title
+        } label: {
+            HStack(spacing: 11) {
+                Image(systemName: icon).frame(width: 20)
+                Text(title).font(.system(size: 13, weight: .medium))
+                Spacer()
+                if model.tab == title { Circle().fill(accent).frame(width: 5, height: 5) }
+            }.padding(12).foregroundStyle(model.tab == title ? accent : .secondary)
+                .background(model.tab == title ? accent.opacity(0.10) : .clear, in: RoundedRectangle(cornerRadius: 10))
+        }.buttonStyle(.plain)
+    }
+
+    private func metric(_ title: String, value: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title).font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(.secondary)
+                Spacer()
+                Image(systemName: icon).font(.system(size: 12)).foregroundStyle(accent)
+            }
+            Text(value).font(.system(size: 14, weight: .semibold))
+        }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(panel, in: RoundedRectangle(cornerRadius: 13))
+    }
+
+    private var capture: some View {
+        HStack(alignment: .top, spacing: 18) {
+            VStack(spacing: 0) {
+                ZStack {
+                    Color.black.opacity(0.35)
+                    if model.active {
+                        CameraPreview(session: model.camera.session)
+                        RoundedRectangle(cornerRadius: 95)
+                            .stroke(accent.opacity(0.8), style: StrokeStyle(lineWidth: 1.5, dash: [10, 6]))
+                            .frame(width: 190, height: 250)
+                            .accessibilityHidden(true)
+                    } else {
+                        VStack(spacing: 18) {
+                            Image(systemName: "faceid").font(.system(size: 68, weight: .ultraLight)).foregroundStyle(accent.opacity(0.75))
+                            Text("A câmera está desligada").font(.system(size: 15, weight: .medium))
+                            Text("Ela só liga quando você inicia uma sessão.")
+                                .font(.system(size: 12)).foregroundStyle(.secondary)
+                        }
+                    }
+                    VStack {
+                        HStack {
+                            Label(model.active ? "CÂMERA ATIVA" : "MODO PRIVADO", systemImage: model.active ? "circle.fill" : "lock.fill")
+                                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(model.active ? accent : .secondary)
+                            Spacer()
+                        }
+                        Spacer()
+                    }.padding(16)
+                }.frame(height: 322).clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, topTrailingRadius: 15))
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(model.status).font(.system(size: 12, weight: .medium)).lineLimit(2)
+                    if let distance = model.distance {
+                        Text("Distância visual: \(distance, specifier: "%.3f") • menor = mais semelhante")
+                            .font(.system(size: 11, design: .monospaced)).foregroundStyle(accent)
+                    } else {
+                        Text(model.active ? "\(model.faceCount) rosto(s) • qualidade: \(Int(model.quality * 100))%" : "Nenhum quadro é enviado à internet.")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                }.padding(16).frame(maxWidth: .infinity, alignment: .leading).background(panel)
+            }.clipShape(RoundedRectangle(cornerRadius: 15)).frame(maxWidth: .infinity)
+
+            VStack(alignment: .leading, spacing: 19) {
+                Text(model.tab == "Comparação" ? "Comparar visualmente" : "Cadastre seu rosto")
+                    .font(.system(size: 19, weight: .semibold, design: .rounded))
+                if model.tab == "Cadastro" {
+                    step(1, title: "Confirme com Touch ID", text: "Só você autoriza o cadastro.")
+                    step(2, title: "Olhe para três posições", text: "De frente e levemente para cada lado.")
+                    step(3, title: "Guarde neste Mac", text: "Descritores criptografados, sem fotos.")
+                } else {
+                    Text("O Vision compara características visuais com suas três amostras. Não existe limiar de identidade nem autorização de acesso.")
+                        .font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
+                if model.active {
+                    Text(model.guidance).font(.system(size: 13, weight: .medium)).foregroundStyle(accent).fixedSize(horizontal: false, vertical: true)
+                    if model.tab == "Cadastro" { ProgressView(value: Double(model.sampleCount), total: 3) }
+                    Button("Encerrar sessão") { model.stop() }.buttonStyle(.bordered).controlSize(.large)
+                } else {
+                    Toggle(isOn: $model.consent) {
+                        Text("Autorizo o uso local da câmera e dos descritores do meu rosto.")
+                            .font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
+                    }.toggleStyle(.checkbox).disabled(model.busy)
+                    Button {
+                        Task { await model.start(enrolling: model.tab == "Cadastro") }
+                    } label: {
+                        HStack {
+                            if model.busy { ProgressView().controlSize(.small) }
+                            Text(model.tab == "Cadastro" ? (model.hasEnrollment ? "Refazer cadastro" : "Cadastrar meu rosto") : "Iniciar comparação")
+                            Spacer()
+                            Image(systemName: "arrow.right")
+                        }.padding(.vertical, 5)
+                    }.buttonStyle(.borderedProminent).controlSize(.large)
+                        .disabled(!model.consent || model.busy || (model.tab == "Comparação" && !model.hasEnrollment))
+                }
+                Text("Requer Touch ID configurado. Sessões duram até 45 segundos e param ao sair do app.")
+                    .font(.system(size: 10)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }.padding(20).frame(width: 250, alignment: .leading)
+                .background(panel, in: RoundedRectangle(cornerRadius: 15))
+        }
+    }
+
+    private func step(_ number: Int, title: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: 11) {
+            Text("\(number)").font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(accent).frame(width: 24, height: 24).background(accent.opacity(0.1), in: Circle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title).font(.system(size: 12, weight: .medium))
+                Text(text).font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var privacy: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            Label("O que fica no seu Mac", systemImage: "internaldrive").font(.headline)
+            Text("Três descritores de imagem e a versão do Vision. O arquivo é protegido com AES-256-GCM em ~/Library/Application Support/MacFaceGuard/private. A chave fica no Chaves, sem sincronização, com proteção pelo conjunto atual de biometrias.")
+                .font(.system(size: 13)).foregroundStyle(.secondary).textSelection(.enabled)
+            Text("O diretório privado fica fora do OneDrive, do Git e da pasta do aplicativo. Ele é marcado para exclusão de backup; ferramentas que ignoram essa marcação ainda podem copiá-lo. Nunca mova o cadastro ou a chave para o repositório.")
+                .font(.system(size: 12)).foregroundStyle(.secondary)
+            Divider()
+            Toggle("Abrir MacFaceGuard ao entrar no macOS", isOn: Binding(get: { model.loginEnabled }, set: { model.setLogin($0) }))
+                .toggleStyle(.switch)
+            Text("A câmera permanece desligada na inicialização.").font(.caption).foregroundStyle(.secondary)
+            if !model.loginMessage.isEmpty {
+                Text(model.loginMessage).font(.caption).foregroundStyle(.orange)
+                Button("Abrir Itens de Início") { SMAppService.openSystemSettingsLoginItems() }
+            }
+            Divider()
+            HStack {
+                Button("Ajustar permissão da câmera") {
+                    model.stop()
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera") { NSWorkspace.shared.open(url) }
+                }
+                Spacer()
+                Button("Excluir cadastro", role: .destructive) { confirmDelete = true }
+                    .disabled(!model.hasEnrollment || model.busy)
+            }
+        }.padding(24).background(panel, in: RoundedRectangle(cornerRadius: 15))
+    }
+}
+
+private final class PreviewSurface: NSView {
+    let preview = AVCaptureVideoPreviewLayer()
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        preview.videoGravity = .resizeAspectFill
+        layer?.addSublayer(preview)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) não é usado") }
+    override func layout() { super.layout(); preview.frame = bounds }
+}
+
+private struct CameraPreview: NSViewRepresentable {
+    let session: AVCaptureSession
+    func makeNSView(context: Context) -> PreviewSurface {
+        let view = PreviewSurface()
+        view.preview.session = session
+        return view
+    }
+    func updateNSView(_ view: PreviewSurface, context: Context) {}
+    static func dismantleNSView(_ view: PreviewSurface, coordinator: ()) { view.preview.session = nil }
+}

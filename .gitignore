@@ -1,0 +1,15 @@
+.build/
+dist/
+.swiftpm/
+.DS_Store
+*.aesgcm
+*.key
+*.keychain*
+*.pem
+*.p12
+*.mobileprovision
+.env*
+private/
+enrollment/
+captures/
+*.log

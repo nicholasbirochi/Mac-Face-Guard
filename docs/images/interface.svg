@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780">
+<rect width="1200" height="780" rx="22" fill="#0e121b"/>
+<rect width="245" height="780" rx="22" fill="#171c26"/>
+<g font-family="-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif" fill="#f2f5f9">
+<g stroke="#66e0bd" fill="none" stroke-width="3"><path d="M28 63V49q0-9 9-9h11M28 72v13q0 9 9 9h11M71 63V49q0-9-9-9H51M71 72v13q0 9-9 9H51"/><path d="M42 58v5m15-5v5m-8 0v9m-10 5q10 8 20 0"/></g>
+<text x="88" y="63" font-size="18" font-weight="600">MacFaceGuard</text><text x="88" y="82" font-size="9" letter-spacing="2" fill="#93a0b2">PERSONAL FACE LAB</text>
+<rect x="20" y="145" width="205" height="45" rx="10" fill="#21372f"/>
+<text x="42" y="173" font-size="14" fill="#66e0bd">◉  Cadastro</text><text x="42" y="223" font-size="14" fill="#93a0b2">⌖  Comparação</text><text x="42" y="273" font-size="14" fill="#93a0b2">♧  Privacidade</text>
+<rect x="20" y="627" width="205" height="95" rx="12" fill="#0e121b"/>
+<text x="36" y="653" font-size="12" fill="#66e0bd">A chave fica no Chaves</text><text x="36" y="677" font-size="12" fill="#93a0b2">Sem conta, sem nuvem e sem</text><text x="36" y="695" font-size="12" fill="#93a0b2">gravação de fotos ou vídeos.</text><text x="24" y="752" font-size="10" fill="#93a0b2">v0.1.0 • Protótipo experimental</text>
+<text x="279" y="50" font-size="11" letter-spacing="1" fill="#93a0b2">ESPAÇO PESSOAL</text><text x="1055" y="50" font-size="12" fill="#66e0bd">100% local</text>
+<text x="279" y="104" font-size="36" font-weight="600">Um rosto. Só neste Mac.</text><text x="279" y="135" font-size="14" fill="#93a0b2">Cadastre seu rosto para explorar a comparação visual com privacidade.</text>
+<g fill="#171c26"><rect x="279" y="165" width="276" height="82" rx="13"/><rect x="570" y="165" width="276" height="82" rx="13"/><rect x="861" y="165" width="305" height="82" rx="13"/></g>
+<g font-size="10" fill="#93a0b2"><text x="295" y="192">CADASTRO</text><text x="586" y="192">ARMAZENAMENTO</text><text x="877" y="192">CÂMERA</text></g>
+<g font-size="16" font-weight="600"><text x="295" y="222">Não cadastrado</text><text x="586" y="222">AES-256-GCM</text><text x="877" y="222">Desligada</text></g>
+<rect x="279" y="270" width="565" height="386" rx="15" fill="#090c12"/><rect x="864" y="270" width="302" height="386" rx="15" fill="#171c26"/>
+<text x="297" y="297" font-size="10" fill="#93a0b2">MODO PRIVADO</text>
+<g stroke="#66e0bd" fill="none" stroke-width="3" opacity="0.8"><path d="M519 396v-25q0-14 14-14h18m-32 66v25q0 14 14 14h18m53-66v-25q0-14-14-14h-18m32 66v25q0 14-14 14h-18"/><path d="M542 386v11m38-11v11m-19-3v24m-25 7q25 18 50 0"/></g>
+<text x="561" y="511" text-anchor="middle" font-size="17">A câmera está desligada</text><text x="561" y="537" text-anchor="middle" font-size="12" fill="#93a0b2">Ela só liga quando você inicia uma sessão.</text>
+<text x="297" y="617" font-size="13">Pronto para o primeiro cadastro</text><text x="297" y="640" font-size="11" fill="#93a0b2">Nenhum quadro é enviado à internet.</text>
+<text x="885" y="305" font-size="21" font-weight="600">Cadastre seu rosto</text>
+<g font-size="13"><text x="885" y="351" fill="#66e0bd">1</text><text x="909" y="351">Confirme com Touch ID</text><text x="885" y="408" fill="#66e0bd">2</text><text x="909" y="408">Olhe para três posições</text><text x="885" y="465" fill="#66e0bd">3</text><text x="909" y="465">Guarde neste Mac</text></g>
+<g font-size="11" fill="#93a0b2"><text x="909" y="371">Só você autoriza o cadastro.</text><text x="909" y="428">De frente e para cada lado.</text><text x="909" y="485">Descritores cifrados, sem fotos.</text><text x="886" y="531">Consentimento antes da captura.</text></g>
+<rect x="885" y="552" width="260" height="44" rx="9" fill="#66e0bd"/><text x="906" y="579" font-size="14" font-weight="600" fill="#0e121b">Cadastrar meu rosto   →</text><text x="886" y="625" font-size="10" fill="#93a0b2">Requer Touch ID. Sessão de até 45 segundos.</text>
+<rect x="279" y="680" width="887" height="72" rx="14" fill="#241f1c"/><text x="297" y="705" font-size="13" font-weight="600" fill="#f2bd79">Laboratório de comparação visual</text><text x="297" y="727" font-size="12" fill="#b4a99d">Sem reconhecimento facial ou prova de vida validados. Autenticação bloqueada; não desbloqueia o macOS.</text>
+</g></svg>
