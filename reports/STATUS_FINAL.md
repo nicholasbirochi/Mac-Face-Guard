@@ -1,4 +1,4 @@
-# Estado real — MacFaceGuard 0.1.0
+# Estado real — MacFaceGuard 0.1.1
 
 Data: 14/10/2026. Protótipo experimental nativo para desenvolvimento local.
 
@@ -10,14 +10,14 @@ Data: 14/10/2026. Protótipo experimental nativo para desenvolvimento local.
 - Comparação de distância de feature prints, explicitamente experimental, sem limiar de identidade.
 - AES-256-GCM com AAD, nonce aleatório e verificação de integridade. Chave no Chaves com biometria atual, sem sincronização e restrição ao dispositivo.
 - Cofre fora do projeto/OneDrive/Git, diretório 0700, arquivo 0600 e exclusão de backup solicitada. Exclusão de chave e cadastro exige Touch ID.
-- Sessão limitada a 45 segundos, descarte de referências ao parar, suspensão/saída/fechamento desligam a câmera.
+- Cadastro limitado a 90 segundos e comparação a 45 segundos, descarte de referências ao parar, suspensão/saída/fechamento desligam a câmera.
 - Registro de abertura no login via SMAppService confirmado por `LOGIN_ITEM_ENABLED`, câmera desligada na inicialização.
 - `.app` release arm64 instalado em `~/Applications/MacFaceGuard.app`, assinatura ad hoc verificada no destino; sem notarização/Developer ID. Entrega em ZIP para evitar metadados de sincronização no pacote.
 
 ## Validação executada
 
 - Starter: `swift test`, 10 testes aprovados; `swift run MacFaceGuardDemo` recusou evidência simulada sem vivacidade.
-- Projeto: `swift test --disable-sandbox --scratch-path /private/tmp/macfaceguard-build`, 17 testes, zero falhas. Caches de módulos temporários definidos devido ao sandbox de desenvolvimento.
+- Projeto: `swift test --disable-sandbox --scratch-path /private/tmp/macfaceguard-build`, 19 testes, zero falhas. Caches de módulos temporários definidos devido ao sandbox de desenvolvimento.
 - `bash scripts/build-app.sh`: build release local e `codesign --verify --deep --strict` aprovados.
 - `sw_vers`: macOS 26.7; `xcodebuild -version`: Xcode 27.0; `swift --version`: Swift 6.4.
 - Interface inicial inspecionada com a câmera desligada, consentimento e botão de cadastro visíveis. Versão corrigida reaberta na pasta Applications.
@@ -26,6 +26,10 @@ Data: 14/10/2026. Protótipo experimental nativo para desenvolvimento local.
 ## Correção de integração
 
 O primeiro teste humano revelou uma condição de corrida: o retorno do Touch ID podia ocorrer antes de a janela recuperar foco. A versão corrigida mantém a sessão autorizada pendente e só inicia a câmera quando o aplicativo fica ativo. Dois testes de regressão cobrem a devolução tardia de foco, cancelamento e eventos de sessões antigas. A mensagem de erro prematura foi removida.
+
+## Guia de captura v0.1.1
+
+Instruções, setas, etapas e feedback de luz/posição aparecem sobre a câmera. A primeira virada aceita qualquer lado; a última exige sinal oposto, evitando ambiguidade da imagem espelhada. Qualidade mínima experimental diferencia frente de lateral, pois Vision penaliza rotação. Viradas pequenas são aceitas, há confirmação sonora e 90 segundos para o cadastro. Dois testes adicionais cobrem direções espelhadas e qualidade lateral, incluindo valores inválidos. Ajustes são de captura experimental, não validação biométrica.
 
 ## Não validado / não implementado
 

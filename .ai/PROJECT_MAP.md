@@ -1,4 +1,4 @@
-# Mapa do projeto — MacFaceGuard v0.1.0
+# Mapa do projeto — MacFaceGuard v0.1.1
 
 Fonte: código local, 14/10/2026. Mapa manual; não é saída Graphify.
 

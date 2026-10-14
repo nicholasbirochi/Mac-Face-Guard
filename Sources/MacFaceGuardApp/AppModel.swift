@@ -15,6 +15,8 @@ final class AppModel: ObservableObject {
     @Published var status = "Pronto para o primeiro cadastro"
     @Published var guidance = "Seu rosto fica neste Mac. Você controla quando a câmera liga."
     @Published var sampleCount = 0
+    @Published var captureHint = ""
+    @Published var poseReady = false
     @Published var faceCount = 0
     @Published var quality: Float = 0
     @Published var distance: Float?
@@ -33,6 +35,8 @@ final class AppModel: ObservableObject {
     private var expiry: Task<Void, Never>?
     private var startedAt: TimeInterval = 0
     private var activation = CaptureActivationGate()
+    private var firstTurn: Double?
+    private var neutralYaw: Double?
 
     init() {
         hasEnrollment = vault.exists
@@ -83,13 +87,17 @@ final class AppModel: ObservableObject {
             sampleCount = 0
             distance = nil
             lastCapture = 0
+            firstTurn = nil
+            neutralYaw = nil
+            captureHint = "Centralize o rosto na moldura."
+            poseReady = false
             activation.prepare(operation)
             status = "Touch ID confirmado • aguardando a janela"
             guidance = enrolling ? "Olhe de frente para a câmera." : "Olhe de frente. A distância visual não confirma sua identidade."
             expiry = Task { [weak self] in
-                try? await Task.sleep(for: .seconds(45))
+                try? await Task.sleep(for: .seconds(enrolling ? 90 : 45))
                 guard !Task.isCancelled, let self, self.run == operation else { return }
-                self.stop(message: "Sessão encerrada após 45 segundos. Inicie novamente quando quiser.")
+                self.stop(message: "O tempo da sessão terminou. Inicie novamente quando quiser.")
             }
             foregrounded()
             if !active { NSApp.activate(ignoringOtherApps: true) }
@@ -123,16 +131,26 @@ final class AppModel: ObservableObject {
         }
         guard let print = frame.print, frame.count == 1 else {
             status = frame.message
+            captureHint = frame.message
+            poseReady = false
             distance = nil
             return
         }
         if mode == "enroll" {
             let pose = CapturePose.allCases[samples.count]
-            guard pose.accepts(yaw: frame.yaw), frame.capturedAt - lastCapture > 1.2 else { return }
+            let qualityEnough = frame.quality >= pose.minimumQuality
+            let yaw = samples.isEmpty ? frame.yaw : frame.yaw - (neutralYaw ?? 0)
+            poseReady = pose.accepts(quality: frame.quality, yaw: yaw, firstTurn: firstTurn)
+            captureHint = !qualityEnough ? "Procure mais luz no rosto." : poseReady ? "Posição detectada. Segure um instante…" : samples.isEmpty ? "Olhe de frente e mantenha o rosto centralizado." : samples.count == 1 ? "Pode virar para qualquer lado, só um pouquinho." : "Passe pelo centro e vire um pouco para o outro lado."
+            guard poseReady, frame.capturedAt - lastCapture > 1.2 else { return }
             do {
                 samples.append(try NSKeyedArchiver.archivedData(withRootObject: print, requiringSecureCoding: true))
+                if samples.count == 1 { neutralYaw = frame.yaw }
+                if samples.count == 2 { firstTurn = yaw }
                 sampleCount = samples.count
                 lastCapture = frame.capturedAt
+                NSSound(named: "Tink")?.play()
+                poseReady = false
                 if samples.count == 3 {
                     guard let context else { throw GuardError.message("A sessão de cadastro expirou.") }
                     try vault.save(Enrollment(revision: 2, samples: samples), context: context)
@@ -141,7 +159,8 @@ final class AppModel: ObservableObject {
                     guidance = "Três amostras salvas. Nenhuma foto ou vídeo foi gravado."
                 } else {
                     status = "Amostra \(samples.count) de 3 capturada"
-                    guidance = samples.count == 1 ? "Vire levemente o rosto para sua esquerda. Se não avançar, tente o outro lado." : "Agora vire levemente para o lado oposto."
+                    guidance = samples.count == 1 ? "Vire um pouco para um dos lados" : "Agora, vire para o lado oposto"
+                    captureHint = samples.count == 1 ? "Esquerda ou direita: você escolhe." : "Passe pelo centro e vire para o outro lado."
                 }
             } catch {
                 stop(message: "O cadastro não pôde ser salvo")
@@ -182,6 +201,9 @@ final class AppModel: ObservableObject {
         busy = false
         faceCount = 0
         quality = 0
+        poseReady = false
+        firstTurn = nil
+        neutralYaw = nil
         distance = nil
         samples.removeAll()
         reference.removeAll()

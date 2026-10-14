@@ -44,14 +44,18 @@ public enum EnrollmentCipher {
 }
 
 public enum CapturePose: Int, CaseIterable, Sendable {
-    case center, left, right
+    case center, eitherSide, oppositeSide
 
-    public func accepts(yaw: Double) -> Bool {
-        guard yaw.isFinite else { return false }
+    public var minimumQuality: Float { self == .center ? 0.20 : 0.10 }
+
+    public func accepts(quality: Float, yaw: Double, firstTurn: Double? = nil) -> Bool {
+        guard yaw.isFinite, quality.isFinite, quality >= minimumQuality, quality <= 1 else { return false }
         switch self {
         case .center: return abs(yaw) < 0.12
-        case .left: return yaw > 0.18 && yaw < 0.55
-        case .right: return yaw < -0.18 && yaw > -0.55
+        case .eitherSide: return abs(yaw) >= 0.08 && abs(yaw) <= 0.65
+        case .oppositeSide:
+            guard let firstTurn, firstTurn.isFinite, abs(firstTurn) >= 0.08 else { return false }
+            return abs(yaw) >= 0.08 && abs(yaw) <= 0.65 && yaw * firstTurn < 0
         }
     }
 }
