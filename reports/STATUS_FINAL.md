@@ -1,6 +1,6 @@
-# Estado real — MacFaceGuard 0.1.3
+# Estado real — MacFaceGuard 0.1.4
 
-Data: 14/10/2026. Aplicativo experimental instalado. A interface confirmou **cadastro local encontrado**; o desenvolvedor não decifrou nem inspecionou o cadastro facial.
+Data: atualizado em 16/10/2026. Aplicativo experimental instalado. A interface confirmou **cadastro local encontrado**; o desenvolvedor não decifrou nem inspecionou o cadastro facial.
 
 ## Implementado
 
@@ -47,3 +47,7 @@ Pastas sincronizadas acrescentaram FinderInfo ao pacote. O build assina em diret
 Descritores faciais continuam sensíveis. Um processo comprometido no usuário/SO fica fora da garantia; a exclusão de backup não controla ferramentas que a ignoram. Alterar as digitais pode invalidar a chave. Exclua cadastro e chave e desative a inicialização em Privacidade antes de remover o app.
 
 Próxima etapa técnica: modelo facial e PAD com licença/proveniência e avaliação consentida, antes de qualquer autorização.
+
+## Ajuste 0.1.4 — 16/10/2026
+
+Solicitado pelo usuário: operar pela barra superior sem ícone no Dock. `scripts/Info.plist` define `LSUIElement=true`; o menu existente abre a janela e permite sair. Versão 0.1.4, build 5. Compilação Xcode Release com assinatura Apple aprovada e instalada. O Info.plist do pacote confirmou LSUIElement, versão e build; codesign --verify --deep --strict e a autoverificação sintética do Chaves passaram. A UI confirmou v0.1.4, cadastro local encontrado e câmera desligada; NSRunningApplication confirmou activationPolicy=accessory, sem Dock. As evidências históricas acima descrevem a versão 0.1.3. Cadastro, criptografia e autenticação não foram alterados.
