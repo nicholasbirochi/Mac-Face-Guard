@@ -16,7 +16,7 @@
 - Glance: https://github.com/jonnyoo/glance — MIT conforme repositório, mas revisar dependências/pesos.
 - Peek: https://github.com/XIVASSS/peek — fork do Glance, declara reforços anti-spoof; não resolve vídeos com confiança.
 - HasBrain FaceUnlock: https://github.com/HasBrain/FaceUnlock — projeto de referência em ArcFace/Core ML, senha armazenada protegida por Keychain/Touch ID; **não importar esse padrão de login**.
-- Silent Face Anti Spoofing: https://github.com/minivision-ai/Silent-Face-Anti-Spoofing — Apache-2.0 para repositório (confirmar LICENSE e pesos individualmente); verificar manutenção e vulnerabilidades nas dependências legadas.
+- Silent Face Anti Spoofing: https://github.com/minivision-ai/Silent-Face-Anti-Spoofing — Apache-2.0 para repositório (confirmar license e pesos individualmente); verificar manutenção e vulnerabilidades nas dependências legadas.
 - InsightFace: https://github.com/deepinsight/insightface — código MIT, modelos pré-treinados oficialmente limitados a pesquisa não comercial, verificar licenciamento antes de distribuir.
 
 ## Avisos de responsabilidade
