@@ -72,3 +72,19 @@ public struct CaptureActivationGate: Sendable {
         return true
     }
 }
+
+/// Recusa quadros atrasados, futuros ou fora de ordem; não é prova de vida.
+public struct CaptureFrameGate: Sendable {
+    private let startedAt: TimeInterval
+    private var lastCapture: TimeInterval?
+
+    public init(startedAt: TimeInterval) { self.startedAt = startedAt }
+
+    public mutating func consume(capturedAt: TimeInterval, now: TimeInterval) -> Bool {
+        guard startedAt.isFinite, now.isFinite, capturedAt.isFinite,
+              capturedAt >= startedAt, capturedAt <= now, now - capturedAt < 2,
+              lastCapture.map({ capturedAt > $0 }) ?? true else { return false }
+        lastCapture = capturedAt
+        return true
+    }
+}

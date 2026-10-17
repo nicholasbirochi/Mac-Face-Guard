@@ -6,13 +6,13 @@ Laboratório nativo de cadastro facial local para macOS. Interface em português
 
 *Ilustração representativa da interface implementada, sem imagens ou dados pessoais; não é captura de tela.*
 
-## Estado real: v0.1.4 experimental
+## Estado real: v0.1.5 experimental
 
 O app permite **cadastrar descritores visuais do rosto** e comparar a distância entre imagens usando `VNGenerateImageFeaturePrintRequest` da Apple. Feature prints são descritores de imagem genéricos: **não são um modelo de reconhecimento de identidade facial**. Não há limiar de identidade, taxa de erro medida ou detector anti-spoofing validado. A decisão de autenticação permanece bloqueada, mesmo se duas imagens forem semelhantes.
 
-Não desbloqueia o macOS, não substitui Touch ID, senha ou FileVault e não solicita nem guarda a senha do Mac. Uma webcam RGB não oferece as garantias do Face ID. Veja [o estado e a validação](reports/STATUS_FINAL.md).
+Não desbloqueia o macOS, não substitui Touch ID, senha ou FileVault e não solicita nem guarda a senha do Mac. Uma webcam RGB não oferece as garantias do Face ID. Veja [o estado e a validação](reports/STATUS_FINAL.md) e a [proposta de modelo facial e avaliação](reports/modelos-e-validacao.md).
 
-> **Situação atual:** a versão 0.1.4 foi instalada com perfil Apple e opera na barra de menus, sem Dock. Assinatura e autoverificação da proteção do Chaves passaram; a interface confirmou cadastro local encontrado. O reconhecimento de identidade e o desbloqueio do macOS continuam sem implementação. O cadastro completo não foi decifrado pelo desenvolvedor.
+> **Situação atual:** a versão 0.1.4 instalada confirmou cadastro local encontrado, assinatura e proteção do Chaves. A 0.1.5 acrescenta recusa de quadros futuros, repetidos ou fora de ordem; consulte o relatório para a validação da atualização. Modelo facial, PAD e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
 
 ## O que ocorre ao bloquear ou reiniciar o Mac
 

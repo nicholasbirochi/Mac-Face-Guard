@@ -88,4 +88,28 @@ final class EnrollmentTests: XCTestCase {
         XCTAssertFalse(gate.consume(first, isForeground: true))
         XCTAssertTrue(gate.consume(second, isForeground: true))
     }
+
+    func testFrameGateRejectsFutureRepeatedOutOfOrderAndStaleFrames() {
+        var gate = CaptureFrameGate(startedAt: 100)
+        XCTAssertFalse(gate.consume(capturedAt: 110, now: 101))
+        XCTAssertFalse(gate.consume(capturedAt: 99, now: 100))
+        XCTAssertTrue(gate.consume(capturedAt: 100, now: 100))
+        XCTAssertFalse(gate.consume(capturedAt: 100, now: 100.5))
+        XCTAssertTrue(gate.consume(capturedAt: 101, now: 101.1))
+        XCTAssertFalse(gate.consume(capturedAt: 100.5, now: 101.2))
+        XCTAssertFalse(gate.consume(capturedAt: 102, now: 104))
+        XCTAssertTrue(gate.consume(capturedAt: 104, now: 104.1))
+    }
+
+    func testFrameGateRejectsNonFiniteTimesAndResetsForANewSession() {
+        var gate = CaptureFrameGate(startedAt: 100)
+        for invalid in [Double.nan, .infinity, -.infinity] {
+            XCTAssertFalse(gate.consume(capturedAt: invalid, now: 101))
+            XCTAssertFalse(gate.consume(capturedAt: 100, now: invalid))
+        }
+        XCTAssertTrue(gate.consume(capturedAt: 101, now: 101))
+        gate = CaptureFrameGate(startedAt: 200)
+        XCTAssertFalse(gate.consume(capturedAt: 101, now: 201))
+        XCTAssertTrue(gate.consume(capturedAt: 201, now: 201))
+    }
 }

@@ -1,6 +1,6 @@
-# Mapa do projeto — MacFaceGuard v0.1.4
+# Mapa do projeto — MacFaceGuard v0.1.5
 
-Fonte: código local, atualizado em 16/10/2026. Mapa manual; não é saída Graphify.
+Fonte: código local, atualizado em 17/10/2026. Mapa manual; não é saída Graphify.
 
 - `Package.swift`: Swift 6, macOS 15+, sem dependências externas.
 - `Sources/MacFaceGuardCore/DecisionEngine.swift`: política pura de recusa por padrão; mantida do starter.
@@ -19,3 +19,6 @@ Riscos e limites: feature print não verifica identidade; não há PAD, métrica
 - Correção 0.1.3: `MacFaceGuard.xcodeproj`, `project.yml`, `scripts/MacFaceGuard.entitlements`; assinatura Apple/profile e preflight do Chaves antes da câmera. Instalada; assinatura e autoverificação do Chaves aprovadas. Desbloqueio do sistema e modelo facial/PAD não implementados; consultar STATUS_FINAL.
 
 - v0.1.4: `LSUIElement` mantém o app na barra de menus, sem Dock; abrir a janela pelo menu existente.
+
+- v0.1.5: `CaptureFrameGate` em `Enrollment.swift` valida relógio monotônico, frescor e ordem dos quadros; `AppModel` reinicia o filtro por sessão. Não é PAD.
+- `reports/modelos-e-validacao.md`: comparação de modelos, proposta EdgeFace XS, migração e protocolo FMR/FNMR/APCER/BPCER. Download aprovado e conversão Core ML validada só com entradas sintéticas (`scripts/convert-edgeface.py`); integração no app pendente.

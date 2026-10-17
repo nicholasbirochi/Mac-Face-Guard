@@ -34,7 +34,7 @@ final class AppModel: ObservableObject {
     private var reference: [VNFeaturePrintObservation] = []
     private var lastCapture: TimeInterval = 0
     private var expiry: Task<Void, Never>?
-    private var startedAt: TimeInterval = 0
+    private var frames: CaptureFrameGate?
     private var activation = CaptureActivationGate()
     private var firstTurn: Double?
     private var neutralYaw: Double?
@@ -115,7 +115,7 @@ final class AppModel: ObservableObject {
 
     func foregrounded() {
         guard let run, consent, activation.consume(run, isForeground: NSApp.isActive) else { return }
-        startedAt = CACurrentMediaTime()
+        frames = CaptureFrameGate(startedAt: CACurrentMediaTime())
         active = true
         busy = false
         status = mode == "enroll" ? "Cadastro em andamento" : "Comparação experimental"
@@ -125,8 +125,8 @@ final class AppModel: ObservableObject {
     }
 
     private func receive(_ frame: FrameAnalysis) {
-        guard active, run == frame.run, CACurrentMediaTime() - frame.capturedAt < 2,
-              frame.capturedAt >= startedAt else { return }
+        guard active, run == frame.run,
+              frames?.consume(capturedAt: frame.capturedAt, now: CACurrentMediaTime()) == true else { return }
         faceCount = frame.count
         quality = frame.quality
         if frame.count < 0 {
@@ -210,6 +210,7 @@ final class AppModel: ObservableObject {
 
     func stop(message: String = "Câmera desligada") {
         run = nil
+        frames = nil
         activation.cancel()
         expiry?.cancel()
         expiry = nil

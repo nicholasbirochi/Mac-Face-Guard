@@ -151,7 +151,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.4 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.1.5 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }
