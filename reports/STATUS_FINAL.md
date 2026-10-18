@@ -1,4 +1,4 @@
-# Estado real — MacFaceGuard 0.1.4
+# Estado real — MacFaceGuard 0.2.0
 
 Data: atualizado em 16/10/2026. Aplicativo experimental instalado. A interface confirmou **cadastro local encontrado**; o desenvolvedor não decifrou nem inspecionou o cadastro facial.
 
@@ -81,3 +81,9 @@ Anti-fraude passivo na comparação: MiniFASNetV2 + MiniFASNetV1SE (Silent-Face-
 Evidências: conversão com erro máximo de 5,96e-07 contra o PyTorch em 8 entradas sintéticas; 64 testes sintéticos com zero falhas (10 novos de recorte, reamostragem, leitura fail-closed e sequência); build Release assinado e instalado, `--self-check-model` com `MODEL_VERIFIED` e `PAD_VERIFIED` (só imagem sintética), `--self-check-keychain` e `codesign --verify --deep --strict` aprovados. Desempenho contra fotos, telas, vídeos e máscaras reais não foi medido; a comparação com a câmera depende do usuário.
 
 Continua não implementado/validado: calibração e ensaio do PAD com ataques reais, limiar de identidade calibrado, FMR/FNMR/APCER/BPCER, paridade do alinhamento com a referência em OpenCV, cadastro e comparação reais pela câmera (dependem do usuário) e desbloqueio do macOS. A decisão continua sempre recusada.
+
+## Ajuste 0.2.0 — 18/10/2026
+
+Desbloqueio facial experimental, autorizado pelo proprietário e inspirado no Glance (`jonnyoo/glance`, MIT; `KeystrokeInjector` e `LockMonitor` adaptados, aviso em `THIRD_PARTY_NOTICES.md`). Na aba **Desbloqueio**, o usuário guarda a senha do Mac (conferida pelo OpenDirectory; senha errada não é guardada), concede Acessibilidade e arma com Touch ID. A senha fica cifrada com AES-GCM no Chaves; a chave exige `biometryCurrentSet` e só fica na memória enquanto armado. Ao despertar a tela ou parar o descanso com a tela bloqueada, a câmera liga por até 15 s; `UnlockGate` exige um rosto, semelhança acima do limiar (padrão 0,50, ajustável de 0,35 a 0,80) em 2 quadros seguidos e MiniFASNet real em 3 seguidos. Suspeita de fraude, rosto errado por 2 s, mais de um rosto ou tempo esgotado desligam a câmera. Antes de digitar, o bloqueio é relido do WindowServer. São 3 tentativas por bloqueio. Não altera loginwindow, PAM, FileVault, TCC nem AuthorizationDB; depois de reiniciar, o FileVault continua pedindo a senha. Versão 0.2.0, build 11.
+
+Evidências: 71 testes sintéticos com zero falhas (7 novos do `UnlockGate`); build Release universal assinado com `KEYCHAIN_PROTECTION_VERIFIED`; app instalado em `~/Applications` com `codesign --verify --deep --strict` aprovado e direitos de câmera e Chaves. **Não verificado pelo desenvolvedor:** guardar a senha, conceder Acessibilidade, armar, e o desbloqueio real na tela bloqueada — tudo depende do proprietário. Riscos: webcam 2D é mais fraca que o Face ID; foto, tela ou vídeo podem enganar o reconhecimento e o MiniFASNet, cujo limiar não foi calibrado; o limiar de identidade também não. FMR/FNMR/APCER/BPCER continuam não medidos.
