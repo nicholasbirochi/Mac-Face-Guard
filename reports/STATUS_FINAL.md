@@ -51,3 +51,15 @@ Próxima etapa técnica: modelo facial e PAD com licença/proveniência e avalia
 ## Ajuste 0.1.4 — 16/10/2026
 
 Solicitado pelo usuário: operar pela barra superior sem ícone no Dock. `scripts/Info.plist` define `LSUIElement=true`; o menu existente abre a janela e permite sair. Versão 0.1.4, build 5. Compilação Xcode Release com assinatura Apple aprovada e instalada. O Info.plist do pacote confirmou LSUIElement, versão e build; codesign --verify --deep --strict e a autoverificação sintética do Chaves passaram. A UI confirmou v0.1.4, cadastro local encontrado e câmera desligada; NSRunningApplication confirmou activationPolicy=accessory, sem Dock. As evidências históricas acima descrevem a versão 0.1.3. Cadastro, criptografia e autenticação não foram alterados.
+
+## Ajuste 0.1.5 — 17/10/2026
+
+`CaptureFrameGate` recusa quadros futuros, atrasados, repetidos ou fora de ordem; não é PAD. Versão 0.1.5, build 6, instalada com perfil de provisionamento renovado (o perfil gratuito vale 7 dias e precisa ser renovado no Xcode).
+
+## Ajuste 0.1.6 — 18/10/2026
+
+Integração do EdgeFace XS (ver `reports/modelos-e-validacao.md`): alinhamento por cinco pontos, extração Core ML com digest SHA-256 do pacote conferido antes de carregar, cadastro v2 preso a modelo/hash/dimensão/pré-processamento e similaridade apenas informativa. O v1 não é decifrado; a comparação pede novo cadastro. Versão 0.1.6, build 7.
+
+Evidências: `swift test --scratch-path "$HOME/Library/Caches/MacFaceGuard/swift-build"` com 48 testes sintéticos e zero falhas; build Release assinado; `codesign --verify --deep --strict` aprovado no app instalado; `--self-check-keychain` retornou KEYCHAIN_PROTECTION_VERIFIED e `--self-check-model` retornou MODEL_VERIFIED com dimensão 512, usando imagem sintética. O cadastro do proprietário não foi lido nem decifrado.
+
+Continua não implementado/validado: PAD, limiar calibrado, FMR/FNMR/APCER/BPCER, paridade do alinhamento com a referência em OpenCV, cadastro e comparação reais pela câmera (dependem do usuário) e desbloqueio do macOS. A decisão continua sempre recusada.

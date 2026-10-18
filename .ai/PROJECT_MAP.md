@@ -1,6 +1,6 @@
-# Mapa do projeto — MacFaceGuard v0.1.5
+# Mapa do projeto — MacFaceGuard v0.1.6
 
-Fonte: código local, atualizado em 17/10/2026. Mapa manual; não é saída Graphify.
+Fonte: código local, atualizado em 18/10/2026. Mapa manual; não é saída Graphify.
 
 - `Package.swift`: Swift 6, macOS 15+, sem dependências externas.
 - `Sources/MacFaceGuardCore/DecisionEngine.swift`: política pura de recusa por padrão; mantida do starter.
@@ -21,4 +21,6 @@ Riscos e limites: feature print não verifica identidade; não há PAD, métrica
 - v0.1.4: `LSUIElement` mantém o app na barra de menus, sem Dock; abrir a janela pelo menu existente.
 
 - v0.1.5: `CaptureFrameGate` em `Enrollment.swift` valida relógio monotônico, frescor e ordem dos quadros; `AppModel` reinicia o filtro por sessão. Não é PAD.
-- `reports/modelos-e-validacao.md`: comparação de modelos, proposta EdgeFace XS, migração e protocolo FMR/FNMR/APCER/BPCER. Download aprovado e conversão Core ML validada só com entradas sintéticas (`scripts/convert-edgeface.py`); integração no app pendente.
+- `reports/modelos-e-validacao.md`: comparação de modelos, proposta EdgeFace XS, migração e protocolo FMR/FNMR/APCER/BPCER. Download aprovado e conversão Core ML validada só com entradas sintéticas (`scripts/convert-edgeface.py`); integrada no app na 0.1.6.
+
+- v0.1.6: `FaceAlignment.swift` (cinco pontos → similaridade → 112×112 BGRA), `FaceEmbedding.swift` (normalização L2, cosseno, descritor do modelo e digest do pacote), `EdgeFaceExtractor.swift` (cópia privada, hash, compilação e interface Core ML; `--self-check-model`). `Enrollment.swift` ganhou `EnrollmentV2`/`EnrollmentCipherV2`; `TemplateVault` grava `enrollment-v2.aesgcm` e só remove o v1 após reler o v2. `CameraPipeline` usa landmarks em vez de feature prints. Similaridade informativa; decisão sempre recusada sem PAD. Pesos fora do Git.

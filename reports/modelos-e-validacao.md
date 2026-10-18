@@ -1,6 +1,6 @@
 # MacFaceGuard — modelo facial e avaliação incremental
 
-Consulta em 17/10/2026. Proposta para laboratório local, aprovada pelo usuário no mesmo dia (ver "Estado após a aprovação"). Não há reconhecimento 1:1, PAD validado ou desbloqueio do sistema na versão instalada 0.1.4.
+Consulta em 17/10/2026. Proposta para laboratório local, aprovada pelo usuário no mesmo dia (ver "Estado após a aprovação"). Atualizado em 18/10/2026 com a integração da 0.1.6. Não há reconhecimento 1:1 validado, PAD ou desbloqueio do sistema: a similaridade é informativa e a decisão continua recusada.
 
 ## Diagnóstico confirmado no código
 
@@ -8,7 +8,7 @@ Consulta em 17/10/2026. Proposta para laboratório local, aprovada pelo usuário
 
 A parte a substituir é `VNGenerateImageFeaturePrintRequest`: gera características genéricas da imagem, sem um modelo de identidade. A comparação atual não possui limiar de identidade. `DecisionEngine` recebe explicitamente identidade e vivacidade falsas do adaptador real. O resultado continua recusado. Movimento e qualidade de captura não são evidência suficiente de PAD.
 
-Não foi aberto, decifrado, exportado ou reenviado o cadastro do proprietário. O cadastro existente permanece no formato v1, provedor `apple-vision-image-feature-print`, revisão 2. Não será reinterpretado como embedding facial.
+Não foi aberto, decifrado, exportado ou reenviado o cadastro do proprietário. O cadastro existente permanece no formato v1, provedor `apple-vision-image-feature-print`, revisão 2. Não será reinterpretado como embedding facial. (Diagnóstico anterior à 0.1.6; o estado atual está em "Estado na 0.1.6".)
 
 ## Alternativas verificadas em fontes primárias
 
@@ -37,7 +37,16 @@ O usuário autorizou o protótipo local do EdgeFace XS e das ferramentas de conv
 - Checkpoint baixado da revisão fixada para `~/Library/Caches/MacFaceGuard/edgeface-build/`, fora do repositório: 7.170.425 bytes, SHA-256 `5ae7504c…6ce16`, conferido por `scripts/convert-edgeface.py` antes de carregar (`weights_only=True`).
 - Ferramentas em ambiente virtual próprio no mesmo cache (torch 2.7.1, coremltools 9.0); não são dependências do app.
 - Conversão para `EdgeFaceXS.mlpackage` (FP32, CPU_ONLY, entrada RGB 112×112, saída de 512 dimensões) concluída. Em 8 entradas **sintéticas**, cosseno em relação ao PyTorch ≥ 0,99999 e erro absoluto máximo ≤ 2e-7; `predict` isolado levou cerca de 2,5 ms por imagem após a primeira chamada (29 ms). Isso prova equivalência numérica da conversão, não precisão biométrica nem latência do pipeline completo.
-- Ainda não feito: alinhamento por cinco pontos em Swift, extração no app, novo formato de cadastro, migração e qualquer ensaio com pessoas. Amostra humana continua **0**.
+- Integração no app concluída na 0.1.6 (build 7, 18/10/2026); ver a seção seguinte. Amostra humana continua **0**.
+
+## Estado na 0.1.6 (18/10/2026)
+
+- `FaceAlignment` (núcleo): cinco pontos (olhos, nariz e cantos da boca) obtidos dos landmarks do Vision; similaridade por mínimos quadrados até a referência ArcFace 112×112, com recusa de pontos não finitos, geometria degenerada, reflexão, escala fora de (0,07; 1,5), rotação ≥ 45° e ajuste ruim (RMS ≥ 8 px). Amostragem bilinear BGRA com borda zero; versão de pré-processamento `arcface5-similarity-112-bgra-bilinear-v1`.
+- `EdgeFaceExtractor` (app): copia `EdgeFaceXS.mlpackage` do cache local para pasta temporária `0700`, confere o digest SHA-256 do pacote (`036326e6…0edee`) na cópia, compila, confere a interface (entrada 112×112, saída de 512) e roda só em CPU. Pacote ausente, adulterado ou incompatível bloqueia câmera e comparação. Os pesos continuam fora do Git e do app.
+- Cadastro v2 (`enrollment-v2.aesgcm`, AAD `MacFaceGuard.enrollment.v2`): três vetores L2 com identificador, hash, dimensão e pré-processamento do modelo, validados ao gravar e ao abrir. O v1 não é decifrado nem reinterpretado: a comparação pede novo cadastro com consentimento e Touch ID. O v1 só é removido depois que o v2 foi gravado atomicamente e relido com sucesso.
+- Comparação: mostra a maior similaridade do cosseno como informação. `DecisionEngine` continua recebendo identidade e vivacidade falsas; o resultado é sempre recusa, porque não há PAD nem limiar calibrado.
+- Evidência: `swift test` com 48 testes sintéticos sem falhas (alinhamento, normalização, integridade do pacote, cadastro v2 com modelo/hash/dimensão/pré-processamento incompatíveis, adulteração e recusa sem PAD); app instalado com assinatura válida, `--self-check-keychain` e `--self-check-model` (`MODEL_VERIFIED`, dimensão 512) usando apenas imagem sintética. Nenhum teste lê o cadastro do proprietário.
+- Não feito: paridade numérica entre o alinhamento Swift e o `cv2` da referência dos autores (OpenCV não instalado); latência e memória do pipeline completo; uso da câmera com cadastro v2 real; qualquer ensaio com pessoas.
 
 ## Cadastro e migração
 
