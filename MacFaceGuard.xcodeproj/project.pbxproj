@@ -15,6 +15,7 @@
 		5C65A8F9AB7C7F71EFE77C95 /* RotationRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = B62A4BE0182047A36BC22D1A /* RotationRing.swift */; };
 		65D1222BDB95BDFA0A161FDA /* EdgeFaceExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C271AEB91A8214C7B8E71F34 /* EdgeFaceExtractor.swift */; };
 		792F5CC63E8BF5D0440A09EC /* TemplateVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = E17F708B751F498D5A8B4DE0 /* TemplateVault.swift */; };
+		8669A30779D65189E198CBF5 /* PresentationAttackDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F0FA127035AEB133E73DEAF /* PresentationAttackDetector.swift */; };
 		9A641307402F2741F5F1983D /* CameraPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5996E6BCC345331DB84EF839 /* CameraPipeline.swift */; };
 		9CAB1B03D6B489FA45938274 /* DecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E0A9F997F4AC13F17A748B /* DecisionEngine.swift */; };
 		C9C2118958599C1FCA847CC1 /* MacFaceGuardCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 14B91581933043FB868B5306 /* MacFaceGuardCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -22,6 +23,7 @@
 		CBD6DCD3ED62B9D8B2CED012 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = D1460005E661015182575815 /* AppIcon.icns */; };
 		CBD99D9CC559A3BCFA21BB20 /* NotchIsland.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B63941C53175A689AEF573 /* NotchIsland.swift */; };
 		E68E5A1344211084E082CEEC /* MacFaceGuardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400E5255CFEBDB37FB704958 /* MacFaceGuardApp.swift */; };
+		F83C1092DAD8F5967B199938 /* PresentationAttack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770EBB5490468962B06693A4 /* PresentationAttack.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +56,8 @@
 		21B63941C53175A689AEF573 /* NotchIsland.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchIsland.swift; sourceTree = "<group>"; };
 		400E5255CFEBDB37FB704958 /* MacFaceGuardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacFaceGuardApp.swift; sourceTree = "<group>"; };
 		5996E6BCC345331DB84EF839 /* CameraPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPipeline.swift; sourceTree = "<group>"; };
+		5F0FA127035AEB133E73DEAF /* PresentationAttackDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationAttackDetector.swift; sourceTree = "<group>"; };
+		770EBB5490468962B06693A4 /* PresentationAttack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationAttack.swift; sourceTree = "<group>"; };
 		85D1CE3296B5B1D9BFA07CB1 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		B62A4BE0182047A36BC22D1A /* RotationRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RotationRing.swift; sourceTree = "<group>"; };
 		C271AEB91A8214C7B8E71F34 /* EdgeFaceExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeFaceExtractor.swift; sourceTree = "<group>"; };
@@ -86,6 +90,7 @@
 				C271AEB91A8214C7B8E71F34 /* EdgeFaceExtractor.swift */,
 				400E5255CFEBDB37FB704958 /* MacFaceGuardApp.swift */,
 				21B63941C53175A689AEF573 /* NotchIsland.swift */,
+				5F0FA127035AEB133E73DEAF /* PresentationAttackDetector.swift */,
 				E17F708B751F498D5A8B4DE0 /* TemplateVault.swift */,
 			);
 			name = MacFaceGuardApp;
@@ -100,6 +105,7 @@
 				D6F1745F8523B12DB30335AE /* FaceAlignment.swift */,
 				D4B97839D6269287973FF980 /* FaceEmbedding.swift */,
 				0DAAB756C3C2B3C1CA233511 /* FaceGeometry.swift */,
+				770EBB5490468962B06693A4 /* PresentationAttack.swift */,
 				B62A4BE0182047A36BC22D1A /* RotationRing.swift */,
 			);
 			name = MacFaceGuardCore;
@@ -233,6 +239,7 @@
 				4DBE8B55B31047B7889E4B8F /* FaceAlignment.swift in Sources */,
 				1C700253EAED54913A5E3724 /* FaceEmbedding.swift in Sources */,
 				58E083EC98B1411AA24AAE33 /* FaceGeometry.swift in Sources */,
+				F83C1092DAD8F5967B199938 /* PresentationAttack.swift in Sources */,
 				5C65A8F9AB7C7F71EFE77C95 /* RotationRing.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -246,6 +253,7 @@
 				65D1222BDB95BDFA0A161FDA /* EdgeFaceExtractor.swift in Sources */,
 				E68E5A1344211084E082CEEC /* MacFaceGuardApp.swift in Sources */,
 				CBD99D9CC559A3BCFA21BB20 /* NotchIsland.swift in Sources */,
+				8669A30779D65189E198CBF5 /* PresentationAttackDetector.swift in Sources */,
 				792F5CC63E8BF5D0440A09EC /* TemplateVault.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -74,4 +74,10 @@ Cadastro na ilha (`NotchIsland`): o anel de giro, a prévia circular e as amostr
 
 Evidências: 54 testes sintéticos com zero falhas; build Release assinado, `--self-check-keychain` aprovado e `codesign --verify --deep --strict` aprovado no app instalado. A aparência da ilha com a câmera real depende do cadastro feito pelo usuário e não foi conferida pelo desenvolvedor.
 
-Continua não implementado/validado: PAD, limiar calibrado, FMR/FNMR/APCER/BPCER, paridade do alinhamento com a referência em OpenCV, cadastro e comparação reais pela câmera (dependem do usuário) e desbloqueio do macOS. A decisão continua sempre recusada.
+## Ajuste 0.1.9 — 18/10/2026
+
+Anti-fraude passivo na comparação: MiniFASNetV2 + MiniFASNetV1SE (Silent-Face-Anti-Spoofing, Apache-2.0, revisão `b6d5f04a`), baixados com autorização do usuário, conferidos por SHA-256 e convertidos localmente em `MiniFASNetPAD.mlpackage` (fora do Git e do app). `PresentationAttackDetector` confere o digest, compila numa pasta privada e roda só em CPU. Cada quadro da comparação é avaliado; suspeita aparece como "Possível fraude detectada", e o resultado continua recusado em qualquer caso. Sem desbloqueio do Mac, sem senha armazenada ou injetada. O cadastro não usa PAD. Versão 0.1.9, build 10.
+
+Evidências: conversão com erro máximo de 5,96e-07 contra o PyTorch em 8 entradas sintéticas; 64 testes sintéticos com zero falhas (10 novos de recorte, reamostragem, leitura fail-closed e sequência); build Release assinado e instalado, `--self-check-model` com `MODEL_VERIFIED` e `PAD_VERIFIED` (só imagem sintética), `--self-check-keychain` e `codesign --verify --deep --strict` aprovados. Desempenho contra fotos, telas, vídeos e máscaras reais não foi medido; a comparação com a câmera depende do usuário.
+
+Continua não implementado/validado: calibração e ensaio do PAD com ataques reais, limiar de identidade calibrado, FMR/FNMR/APCER/BPCER, paridade do alinhamento com a referência em OpenCV, cadastro e comparação reais pela câmera (dependem do usuário) e desbloqueio do macOS. A decisão continua sempre recusada.

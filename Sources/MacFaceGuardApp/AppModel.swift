@@ -21,6 +21,8 @@ final class AppModel: ObservableObject {
     @Published var faceCount = 0
     @Published var quality: Float = 0
     @Published var similarity: Float?
+    /// Última leitura do MiniFASNet na comparação; informativa, não autoriza.
+    @Published var presentation: PresentationAssessment?
     @Published var loginEnabled = false
     @Published var loginMessage = ""
     @Published var error: String?
@@ -35,6 +37,8 @@ final class AppModel: ObservableObject {
     private var samples: [[Float]] = []
     private var reference: EnrollmentV2?
     private var extractor: EdgeFaceExtractor?
+    private var detector: PresentationAttackDetector?
+    private var streak = PresentationStreak(required: 3)
     private var lastCapture: TimeInterval = 0
     private var expiry: Task<Void, Never>?
     private var frames: CaptureFrameGate?
@@ -74,6 +78,12 @@ final class AppModel: ObservableObject {
             let loaded = try await Task.detached(priority: .userInitiated) { try EdgeFaceExtractor() }.value
             guard run == operation else { return }
             extractor = loaded
+            // A comparação também exige o PAD íntegro; sem ele, nada de câmera. O cadastro não usa PAD.
+            if !enrolling {
+                let pad = try await Task.detached(priority: .userInitiated) { try PresentationAttackDetector() }.value
+                guard run == operation else { return }
+                detector = pad
+            }
             if enrolling { try vault.prepare(context: auth) }
             else { reference = try vault.load(context: auth, model: loaded.descriptor) }
             let authorized: Bool
@@ -88,6 +98,8 @@ final class AppModel: ObservableObject {
             samples = []
             sampleCount = 0
             similarity = nil
+            presentation = nil
+            streak.reset()
             lastCapture = 0
             firstTurn = nil
             neutralYaw = nil
@@ -114,12 +126,12 @@ final class AppModel: ObservableObject {
     }
 
     func foregrounded() {
-        guard let run, consent, let extractor, activation.consume(run, isForeground: NSApp.isActive) else { return }
+        guard let run, consent, let extractor, mode == "enroll" || detector != nil, activation.consume(run, isForeground: NSApp.isActive) else { return }
         frames = CaptureFrameGate(startedAt: CACurrentMediaTime())
         active = true
         busy = false
         status = mode == "enroll" ? "Cadastro em andamento" : "Comparação experimental"
-        camera.start(run: run, extractor: extractor) { [weak self] frame in
+        camera.start(run: run, extractor: extractor, detector: mode == "enroll" ? nil : detector) { [weak self] frame in
             Task { @MainActor in self?.receive(frame) }
         }
         if mode == "enroll" { island.show(model: self) }
@@ -141,6 +153,8 @@ final class AppModel: ObservableObject {
             captureHint = frame.message
             poseReady = false
             similarity = nil
+            presentation = nil
+            streak.reset()
             return
         }
         if mode == "enroll" {
@@ -196,13 +210,21 @@ final class AppModel: ObservableObject {
         } else {
             do {
                 guard let reference else { throw GuardError.message("Cadastro ausente.") }
+                guard let assessment = frame.presentation else { throw GuardError.message("Quadro sem avaliação anti-fraude.") }
                 similarity = try reference.bestSimilarity(to: embedding)
-                // shortcut: sem PAD e sem limiar validado com dados locais, a similaridade não autoriza acesso.
+                presentation = assessment
+                streak.record(assessment)
+                // shortcut: sem limiar de identidade validado com dados locais, a similaridade não autoriza acesso.
+                // PAD passivo (MiniFASNet, limiar não calibrado) não é prova de vida ativa; só informa a recusa.
                 let decision = DecisionEngine().evaluate(DemoEvidence(cameraAuthorized: true,
                     enrollmentExists: true, singleFaceDetected: true, captureQualityApproved: true,
-                    identityMatched: false, livenessPassed: false, framesConsistent: true,
-                    sessionCurrent: true, spoofSuspected: false))
-                if case .denied = decision { status = "Semelhança medida • autenticação bloqueada" }
+                    identityMatched: false, livenessPassed: streak.passed, framesConsistent: true,
+                    sessionCurrent: true, spoofSuspected: assessment.spoofSuspected))
+                switch decision {
+                case .denied(.possibleSpoof): status = "Possível fraude detectada • autenticação bloqueada"
+                case .denied: status = "Semelhança medida • autenticação bloqueada"
+                case .acceptedForDemo: status = "Autenticação bloqueada"
+                }
             } catch {
                 stop(message: "Comparação interrompida")
                 self.error = "Não foi possível comparar o cadastro com segurança. Nenhum acesso foi autorizado."
@@ -252,9 +274,12 @@ final class AppModel: ObservableObject {
         neutralLift = nil
         ring.reset()
         similarity = nil
+        presentation = nil
+        streak.reset()
         samples.removeAll()
         reference = nil
         extractor = nil
+        detector = nil
         status = message
     }
 

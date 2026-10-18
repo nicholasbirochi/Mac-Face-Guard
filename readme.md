@@ -6,17 +6,17 @@ Experimento nativo de captura facial local para macOS. O foco atual é cadastrar
 
 *Ilustração representativa da interface implementada, sem imagens ou dados pessoais; não é captura de tela.*
 
-## Estado real: v0.1.8 experimental
+## Estado real: v0.1.9 experimental
 
-O app alinha o rosto por cinco pontos dos landmarks do Vision e extrai um vetor de 512 dimensões com o **EdgeFace XS** convertido localmente para Core ML. O cadastro guarda três vetores criptografados, presos ao hash do modelo e ao pré-processamento; a comparação mostra a similaridade do cosseno apenas como informação. Não há limiar de identidade calibrado, taxa de erro medida ou detector anti-spoofing (PAD). A decisão de autenticação permanece bloqueada, mesmo com similaridade alta.
+O app alinha o rosto por cinco pontos dos landmarks do Vision e extrai um vetor de 512 dimensões com o **EdgeFace XS** convertido localmente para Core ML. O cadastro guarda três vetores criptografados, presos ao hash do modelo e ao pré-processamento; a comparação mostra a similaridade do cosseno apenas como informação. Na comparação, o anti-fraude passivo **MiniFASNet** (Apache-2.0), também convertido localmente, estima se o quadro parece foto, tela ou máscara; o resultado é informativo, com limiar não calibrado e sem teste com ataques reais. Não há limiar de identidade calibrado nem taxa de erro medida. A decisão de autenticação permanece bloqueada, mesmo com similaridade alta.
 
 Não desbloqueia o macOS, não substitui Touch ID, senha ou FileVault e não solicita nem guarda a senha do Mac. Uma webcam RGB não oferece as garantias do Face ID. Veja [o estado e a validação](reports/STATUS_FINAL.md) e a [proposta de modelo facial e avaliação](reports/modelos-e-validacao.md).
 
-> **Situação atual:** a 0.1.8 instalada mantém o cadastro v2 e mostra o anel de giro numa ilha no entalhe da câmera, no topo da tela. A 0.1.6 confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. PAD, limiar calibrado, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
+> **Situação atual:** a 0.1.9 instalada acrescenta o anti-fraude MiniFASNet à comparação: suspeita de foto/tela/máscara aparece como "Possível fraude detectada" e a autenticação continua bloqueada em qualquer caso. O cadastro não usa o anti-fraude. A 0.1.8 levou o anel de giro do cadastro para uma ilha no entalhe da câmera. A 0.1.6 confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. Calibração e ensaio do PAD (APCER/BPCER), limiar de identidade, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
 
 ## O que ocorre ao bloquear ou reiniciar o Mac
 
-O aplicativo não autentica a tela de bloqueio nem substitui a senha/Touch ID. A abertura automática inicia o app depois de entrar no macOS; a câmera permanece desligada. Cadastro criptografado e comparação informativa são operações do próprio app. O adaptador real continua recusando autenticação porque não há modelo facial ou PAD validado.
+O aplicativo não autentica a tela de bloqueio nem substitui a senha/Touch ID. A abertura automática inicia o app depois de entrar no macOS; a câmera permanece desligada. Cadastro criptografado e comparação informativa são operações do próprio app. O adaptador real continua recusando autenticação porque não há modelo facial ou PAD validado; o MiniFASNet só informa.
 
 ## Barra de menus
 
@@ -45,7 +45,7 @@ Em **Comparação**, confirme o consentimento e o Touch ID para observar a simil
 
 Requer macOS 15+, Xcode/Swift 6+, conta Apple de desenvolvimento configurada no Xcode, certificado/perfil válido e Touch ID. Os controles biométricos do Chaves precisam de autorização na assinatura; uma assinatura ad hoc não serve para esse fluxo. Não há pacotes Swift externos.
 
-O modelo não é distribuído. O app procura `~/Library/Caches/MacFaceGuard/edgeface-build/EdgeFaceXS.mlpackage`, gerado localmente por `scripts/convert-edgeface.py` a partir do checkpoint oficial fixado em [reports/modelos-e-validacao.md](reports/modelos-e-validacao.md), e recusa um pacote com hash diferente. Sem ele, cadastro e comparação ficam bloqueados.
+O modelo não é distribuído. O app procura `~/Library/Caches/MacFaceGuard/edgeface-build/EdgeFaceXS.mlpackage`, gerado localmente por `scripts/convert-edgeface.py` a partir do checkpoint oficial fixado em [reports/modelos-e-validacao.md](reports/modelos-e-validacao.md), e recusa um pacote com hash diferente. Sem ele, cadastro e comparação ficam bloqueados. A comparação também exige `~/Library/Caches/MacFaceGuard/minifasnet-build/MiniFASNetPAD.mlpackage`, gerado por `scripts/convert-minifasnet.py` a partir da revisão fixada do Silent-Face-Anti-Spoofing; ausente ou com hash diferente, a comparação não começa.
 
 ```bash
 swift test --scratch-path "$HOME/Library/Caches/MacFaceGuard/swift-build"
@@ -74,12 +74,13 @@ Em **Privacidade**, exclua o cadastro com Touch ID e desative a abertura no logi
 - [Vision: landmarks faciais](https://developer.apple.com/documentation/vision/vndetectfacelandmarksrequest)
 - [Core ML: MLModel](https://developer.apple.com/documentation/coreml/mlmodel)
 - [EdgeFace: código e checkpoints dos autores (BSD-3-Clause)](https://github.com/otroshi/edgeface)
+- [Silent-Face-Anti-Spoofing / MiniFASNet (Apache-2.0)](https://github.com/minivision-ai/Silent-Face-Anti-Spoofing)
 - [CryptoKit: AES-GCM](https://developer.apple.com/documentation/cryptokit/aes/gcm)
 - [LocalAuthentication: LAContext](https://developer.apple.com/documentation/localauthentication/lacontext)
 - [ServiceManagement: SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice)
 - [Avaliação das referências open source](reports/avaliacao-open-source.md)
 
-Licença MIT para o código deste projeto. Frameworks Apple seguem seus próprios termos. Nenhum peso de terceiros é incluído: o modelo EdgeFace é convertido localmente e fica fora do Git e do app.
+Licença MIT para o código deste projeto. Frameworks Apple seguem seus próprios termos. Nenhum peso de terceiros é incluído: os modelos EdgeFace e MiniFASNet são convertidos localmente e ficam fora do Git e do app.
 
 ## Licença
 
