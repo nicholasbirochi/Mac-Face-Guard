@@ -17,10 +17,10 @@ Pessoa com acesso físico temporário, alguém com foto pública do proprietári
 | Vídeo gravado | replay de movimentos | desafios aleatórios + PAD temporal | elevado/não comprovado |
 | Deepfake de vídeo | falso rosto responsivo | múltiplos controles + avaliação especializada | desconhecido/elevado |
 | Câmera virtual / frame injection | falsa origem do stream | validação de origem e desenho de confiança do sensor | não resolvido por software simples |
-| Rosto semelhante / gêmeos | falso match | limiar calibrado e avaliação específica | não mensurado |
+| Rosto semelhante / gêmeos | falso match | limiar calibrado e avaliação específica | não mensurado; na 0.1.6 não há limiar e a similaridade não autoriza |
 | Roubo de templates | exposição de dado biométrico | AES-GCM, Keychain, `ThisDeviceOnly`, privilégio mínimo | depende da segurança do endpoint |
 | Roubo de chave por sessão comprometida | exposição | acesso biométrico/device owner com LAContext, expiração | não elimina malware em sessão |
-| Falha de dependência/modelo | execução maliciosa | pin/assinatura/hash, auditoria e SBOM | exige manutenção |
+| Falha de dependência/modelo | execução maliciosa | pin/assinatura/hash, auditoria e SBOM | exige manutenção; na 0.1.6 revisão upstream, checkpoint e pacote Core ML têm SHA-256 fixado e conferido antes do uso |
 | Alteração de configuração | PAD desativado | configurações protegidas, defaults restritivos | deve ser testado |
 | Falha de câmera / ausência de rede | erro interpretado como sucesso | negar por padrão, sem fallback inseguro | baixo se implementado |
 | Login via senha injetada | divulgação de credencial/uso em foco errado | **não implementar** | eliminado do escopo |
