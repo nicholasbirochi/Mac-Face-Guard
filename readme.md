@@ -6,13 +6,13 @@ Experimento nativo de captura facial local para macOS. O foco atual é cadastrar
 
 *Ilustração representativa da interface implementada, sem imagens ou dados pessoais; não é captura de tela.*
 
-## Estado real: v0.1.6 experimental
+## Estado real: v0.1.7 experimental
 
 O app alinha o rosto por cinco pontos dos landmarks do Vision e extrai um vetor de 512 dimensões com o **EdgeFace XS** convertido localmente para Core ML. O cadastro guarda três vetores criptografados, presos ao hash do modelo e ao pré-processamento; a comparação mostra a similaridade do cosseno apenas como informação. Não há limiar de identidade calibrado, taxa de erro medida ou detector anti-spoofing (PAD). A decisão de autenticação permanece bloqueada, mesmo com similaridade alta.
 
 Não desbloqueia o macOS, não substitui Touch ID, senha ou FileVault e não solicita nem guarda a senha do Mac. Uma webcam RGB não oferece as garantias do Face ID. Veja [o estado e a validação](reports/STATUS_FINAL.md) e a [proposta de modelo facial e avaliação](reports/modelos-e-validacao.md).
 
-> **Situação atual:** a 0.1.6 instalada confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. PAD, limiar calibrado, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
+> **Situação atual:** a 0.1.7 instalada mantém o cadastro v2 e acrescenta o anel de giro. A 0.1.6 confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. PAD, limiar calibrado, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
 
 ## O que ocorre ao bloquear ou reiniciar o Mac
 
@@ -27,7 +27,7 @@ O MacFaceGuard fica no ícone de rosto na barra superior do macOS, sem ícone no
 1. Abra `MacFaceGuard.app` no Mac.
 2. Em **Cadastro**, marque o consentimento e clique **Cadastrar meu rosto**.
 3. Confirme com Touch ID e autorize a câmera no diálogo do macOS.
-4. Olhe de frente e depois levemente para cada lado. O cadastro expira em 90 segundos; as instruções e setas aparecem sobre a câmera, com confirmação sonora por amostra.
+4. Olhe de frente para o círculo e depois mova a cabeça devagar, desenhando um círculo com o nariz, até todos os traços ficarem verdes; o texto abaixo indica a próxima direção. Termine virando para cada lado com a cabeça nivelada. O cadastro expira em 90 segundos, com confirmação sonora por amostra. O anel só orienta o movimento: não detecta foto ou vídeo.
 5. O app confirma quando os três vetores faciais forem criptografados. A câmera desliga. Sem o modelo local íntegro, o cadastro não começa.
 
 Em **Comparação**, confirme o consentimento e o Touch ID para observar a similaridade (de −1 a 1; maior indica vetores mais próximos). O número não valida identidade nem autoriza acesso. Em **Privacidade**, é possível excluir cadastro e chave, abrir a configuração da câmera e controlar a abertura no login.

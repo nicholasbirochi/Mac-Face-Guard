@@ -62,4 +62,10 @@ Integração do EdgeFace XS (ver `reports/modelos-e-validacao.md`): alinhamento 
 
 Evidências: `swift test --scratch-path "$HOME/Library/Caches/MacFaceGuard/swift-build"` com 48 testes sintéticos e zero falhas; build Release assinado; `codesign --verify --deep --strict` aprovado no app instalado; `--self-check-keychain` retornou KEYCHAIN_PROTECTION_VERIFIED e `--self-check-model` retornou MODEL_VERIFIED com dimensão 512, usando imagem sintética. O cadastro do proprietário não foi lido nem decifrado.
 
+## Ajuste 0.1.7 — 18/10/2026
+
+Cadastro com anel de giro (`RotationRing`): prévia circular espelhada, 60 traços que passam de cinza a verde conforme a direção do nariz e indicação da próxima direção. Grava só com anel em 95% e três vetores (frente e dois lados nivelados). O anel não é PAD: um vídeo reproduzido também o completa. Limiares não calibrados com pessoas. Versão 0.1.7, build 8.
+
+Evidências: 54 testes sintéticos com zero falhas (6 do anel); build Release assinado e `codesign --verify --deep --strict` aprovado no app instalado. O cadastro real pela câmera depende do usuário; o cadastro não foi lido nem decifrado.
+
 Continua não implementado/validado: PAD, limiar calibrado, FMR/FNMR/APCER/BPCER, paridade do alinhamento com a referência em OpenCV, cadastro e comparação reais pela câmera (dependem do usuário) e desbloqueio do macOS. A decisão continua sempre recusada.

@@ -14,6 +14,10 @@ struct FrameAnalysis: @unchecked Sendable {
     let embedding: [Float]?
     let capturedAt: TimeInterval
     let message: String
+    /// Altura do nariz em relação aos olhos, usada só para o anel de giro.
+    var lift: Double? = nil
+    /// O buffer analisado já chega espelhado; define o sentido horizontal do anel.
+    var mirrored = false
 }
 
 final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
@@ -84,7 +88,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
 
     func captureOutput(_ output: AVCaptureOutput, didOutput buffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let now = CACurrentMediaTime()
-        guard let run, let callback, let extractor, now - lastAnalysis >= 0.5 else { return }
+        guard let run, let callback, let extractor, now - lastAnalysis >= 0.2 else { return }
         lastAnalysis = now
         let timestamp = CMSampleBufferGetPresentationTimeStamp(buffer)
         guard timestamp.isValid, !lastTimestamp.isValid || timestamp > lastTimestamp,
@@ -120,17 +124,21 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                     return
                 }
                 var turn: Double?
+                var lift: Double?
                 if let landmarks = face.landmarks,
-                   let nose = averageX(landmarks.nose),
-                   let left = averageX(landmarks.leftEye), let right = averageX(landmarks.rightEye) {
-                    turn = FaceGeometry.noseOffset(nose: nose, leftEye: left, rightEye: right)
+                   let nose = average(landmarks.nose), let left = average(landmarks.leftEye),
+                   let right = average(landmarks.rightEye) {
+                    turn = FaceGeometry.noseOffset(nose: nose.x, leftEye: left.x, rightEye: right.x)
+                    lift = FaceGeometry.noseLift(nose: nose.y, leftEyeX: left.x, leftEyeY: left.y,
+                                                 rightEyeX: right.x, rightEyeY: right.y)
                 }
+                let mirrored = connection.isVideoMirrored
                 let width = CVPixelBufferGetWidth(pixels), height = CVPixelBufferGetHeight(pixels)
                 guard let landmarks = face.landmarks,
                       let points = fivePoints(landmarks, width: width, height: height),
                       let transform = try? FaceAlignment.transform(from: points) else {
                     callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw, turn: turn, embedding: nil,
-                        capturedAt: now, message: "Olhe para a câmera com olhos, nariz e boca visíveis."))
+                        capturedAt: now, message: "Olhe para a câmera com olhos, nariz e boca visíveis.", lift: lift, mirrored: mirrored))
                     return
                 }
                 guard CVPixelBufferGetPixelFormatType(pixels) == kCVPixelFormatType_32BGRA,
@@ -147,7 +155,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                 }
                 let embedding = try extractor.embedding(alignedBGRA: aligned)
                 callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw, turn: turn, embedding: embedding,
-                    capturedAt: now, message: "Rosto detectado. Siga a orientação ao lado."))
+                    capturedAt: now, message: "Rosto detectado. Siga a orientação ao lado.", lift: lift, mirrored: mirrored))
             } catch {
                 callback(FrameAnalysis(run: run, count: 0, quality: 0, yaw: 0, turn: nil, embedding: nil,
                     capturedAt: now, message: "A análise deste quadro falhou. Nenhuma autorização foi concedida."))
@@ -172,8 +180,10 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         return try? FivePoints(eyes: (leftEye, rightEye), nose: nose, lips: lips)
     }
 
-    private func averageX(_ region: VNFaceLandmarkRegion2D?) -> Double? {
+    /// Média dos pontos normalizados à caixa do rosto (y para cima).
+    private func average(_ region: VNFaceLandmarkRegion2D?) -> (x: Double, y: Double)? {
         guard let points = region?.normalizedPoints, !points.isEmpty else { return nil }
-        return points.reduce(0) { $0 + Double($1.x) } / Double(points.count)
+        let count = Double(points.count)
+        return (points.reduce(0) { $0 + Double($1.x) } / count, points.reduce(0) { $0 + Double($1.y) } / count)
     }
 }

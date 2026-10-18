@@ -16,7 +16,8 @@ final class AppModel: ObservableObject {
     @Published var sampleCount = 0
     @Published var captureHint = ""
     @Published var poseReady = false
-    @Published var turnProgress: Double = 0
+    /// Guia visual do giro; não é prova de vida nem participa da decisão.
+    @Published var ring = RotationRing()
     @Published var faceCount = 0
     @Published var quality: Float = 0
     @Published var similarity: Float?
@@ -39,6 +40,7 @@ final class AppModel: ObservableObject {
     private var firstTurn: Double?
     private var neutralYaw: Double?
     private var neutralTurn: Double?
+    private var neutralLift: Double?
 
     init() {
         hasEnrollment = vault.exists
@@ -88,8 +90,9 @@ final class AppModel: ObservableObject {
             firstTurn = nil
             neutralYaw = nil
             neutralTurn = nil
-            turnProgress = 0
-            captureHint = "Centralize o rosto na moldura."
+            neutralLift = nil
+            ring.reset()
+            captureHint = "Centralize o rosto no círculo."
             poseReady = false
             activation.prepare(operation)
             status = "Touch ID confirmado • aguardando a janela"
@@ -129,54 +132,59 @@ final class AppModel: ObservableObject {
             error = frame.message
             return
         }
+        if mode == "enroll", frame.count == 1 { traceRing(frame) }
         guard let embedding = frame.embedding, frame.count == 1 else {
             status = frame.message
             captureHint = frame.message
             poseReady = false
-            turnProgress = 0
             similarity = nil
             return
         }
         if mode == "enroll" {
-            let pose = CapturePose.allCases[samples.count]
-            let qualityEnough = frame.quality >= pose.minimumQuality
-            let yaw: Double
-            if samples.isEmpty { yaw = frame.yaw }
-            else if let neutralTurn {
-                guard let turn = frame.turn else {
+            if samples.count < EnrollmentV2.sampleCount {
+                let pose = CapturePose.allCases[samples.count]
+                let qualityEnough = frame.quality >= pose.minimumQuality
+                let yaw: Double
+                if samples.isEmpty { yaw = frame.yaw }
+                else if let neutralTurn {
+                    guard let turn = frame.turn else {
+                        poseReady = false
+                        captureHint = "Gire menos: mantenha os dois olhos visíveis."
+                        return
+                    }
+                    yaw = turn - neutralTurn
+                } else { yaw = frame.yaw - (neutralYaw ?? 0) }
+                // As amostras laterais saem com a cabeça na altura neutra, como no cadastro 0.1.6.
+                let level = samples.isEmpty || abs((frame.lift ?? .nan) - (neutralLift ?? .nan)) < 0.2
+                let geometry = !samples.isEmpty || (frame.turn != nil && frame.lift != nil)
+                poseReady = level && geometry && pose.accepts(quality: frame.quality, yaw: yaw, firstTurn: firstTurn)
+                if !qualityEnough { captureHint = "Procure mais luz no rosto." }
+                else if samples.isEmpty { captureHint = poseReady ? "Posição detectada. Segure um instante…" : "Olhe de frente e mantenha o rosto no círculo." }
+                if poseReady, frame.capturedAt - lastCapture > 1.2 {
+                    samples.append(embedding)
+                    if samples.count == 1 { neutralYaw = frame.yaw; neutralTurn = frame.turn; neutralLift = frame.lift }
+                    if samples.count == 2 { firstTurn = yaw }
+                    sampleCount = samples.count
+                    lastCapture = frame.capturedAt
+                    NSSound(named: "Tink")?.play()
                     poseReady = false
-                    turnProgress = 0
-                    captureHint = "Vire menos: mantenha os dois olhos visíveis."
-                    return
                 }
-                yaw = turn - neutralTurn
-            } else { yaw = frame.yaw - (neutralYaw ?? 0) }
-            poseReady = pose.accepts(quality: frame.quality, yaw: yaw, firstTurn: firstTurn)
-            let correctSide = samples.count != 2 || yaw * (firstTurn ?? 0) < 0
-            turnProgress = samples.isEmpty || !correctSide ? 0 : min(abs(yaw) / 0.08, 1)
-            captureHint = !qualityEnough ? "Procure mais luz no rosto." : poseReady ? "Posição detectada. Segure um instante…" : samples.isEmpty ? "Olhe de frente e mantenha o rosto centralizado." : abs(yaw) > 0.65 ? "Virou demais. Volte um pouco, mantendo os olhos visíveis." : !correctSide ? "Agora para o outro lado, passando pelo centro." : "Vire devagar até a barra completar."
-            guard poseReady, frame.capturedAt - lastCapture > 1.2 else { return }
+            }
+            guard !samples.isEmpty else { return }
+            if samples.count < EnrollmentV2.sampleCount || !ring.isComplete {
+                status = ring.isComplete ? "Anel completo • falta uma vista lateral" : "Gire a cabeça devagar em círculo"
+                guidance = "Mova a cabeça devagar para completar o círculo"
+                captureHint = ringPrompt()
+                return
+            }
             do {
-                samples.append(embedding)
-                if samples.count == 1 { neutralYaw = frame.yaw; neutralTurn = frame.turn }
-                if samples.count == 2 { firstTurn = yaw }
-                sampleCount = samples.count
-                lastCapture = frame.capturedAt
-                NSSound(named: "Tink")?.play()
-                poseReady = false
-                turnProgress = 0
-                if samples.count == EnrollmentV2.sampleCount {
-                    guard let context, let extractor else { throw GuardError.message("A sessão de cadastro expirou.") }
-                    try vault.save(EnrollmentV2(model: extractor.descriptor, embeddings: samples),
-                                   model: extractor.descriptor, context: context)
-                    hasEnrollment = true
-                    stop(message: "Seu cadastro foi criptografado neste Mac")
-                    guidance = "Três vetores faciais salvos. Nenhuma foto ou vídeo foi gravado."
-                } else {
-                    status = "Amostra \(samples.count) de 3 capturada"
-                    guidance = samples.count == 1 ? "Vire um pouco para um dos lados" : "Agora, vire para o lado oposto"
-                    captureHint = samples.count == 1 ? "Esquerda ou direita: você escolhe." : "Passe pelo centro e vire para o outro lado."
-                }
+                guard let context, let extractor else { throw GuardError.message("A sessão de cadastro expirou.") }
+                try vault.save(EnrollmentV2(model: extractor.descriptor, embeddings: samples),
+                               model: extractor.descriptor, context: context)
+                hasEnrollment = true
+                NSSound(named: "Glass")?.play()
+                stop(message: "Seu cadastro foi criptografado neste Mac")
+                guidance = "Três vetores faciais salvos. Nenhuma foto ou vídeo foi gravado."
             } catch {
                 stop(message: "O cadastro não pôde ser salvo")
                 self.error = (error as? GuardError)?.localizedDescription ?? "Falha na proteção do cadastro. Tente novamente."
@@ -198,6 +206,27 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Acende o anel pela direção da cabeça em relação à vista frontal; só orienta o movimento.
+    private func traceRing(_ frame: FrameAnalysis) {
+        guard !samples.isEmpty, let turn = frame.turn, let lift = frame.lift,
+              let neutralTurn, let neutralLift else { return }
+        // Na imagem espelhada, a direita da pessoa é a direita da tela.
+        let dx = frame.mirrored ? turn - neutralTurn : neutralTurn - turn
+        var next = ring
+        if next.record(dx: dx, dy: lift - neutralLift) != nil, next != ring { ring = next }
+    }
+
+    private func ringPrompt() -> String {
+        if !ring.isComplete {
+            guard let gap = ring.largestGapCenter else { return "Mova a cabeça devagar, desenhando um círculo com o nariz." }
+            let directions = ["para a direita", "para cima e à direita", "para cima", "para cima e à esquerda",
+                              "para a esquerda", "para baixo e à esquerda", "para baixo", "para baixo e à direita"]
+            let sector = Int((ring.angle(of: gap) / (2 * .pi) * 8).rounded()) % 8
+            return "Vire a cabeça \(directions[sector])"
+        }
+        return samples.count == 1 ? "Quase lá: vire para um dos lados, olhando reto." : "Quase lá: vire para o outro lado, olhando reto."
+    }
+
     func stop(message: String = "Câmera desligada") {
         run = nil
         frames = nil
@@ -215,7 +244,8 @@ final class AppModel: ObservableObject {
         firstTurn = nil
         neutralYaw = nil
         neutralTurn = nil
-        turnProgress = 0
+        neutralLift = nil
+        ring.reset()
         similarity = nil
         samples.removeAll()
         reference = nil

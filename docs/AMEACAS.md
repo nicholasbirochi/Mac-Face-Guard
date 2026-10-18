@@ -14,7 +14,7 @@ Pessoa com acesso físico temporário, alguém com foto pública do proprietári
 |---|---|---|---|
 | Foto impressa | acesso indevido à demo | PAD + testes variados | ainda presente até medir |
 | Foto em celular | acesso indevido à demo | PAD refletância, movimento temporal | ainda presente |
-| Vídeo gravado | replay de movimentos | desafios aleatórios + PAD temporal | elevado/não comprovado |
+| Vídeo gravado | replay de movimentos | desafios aleatórios + PAD temporal | elevado/não comprovado; o anel de giro do cadastro (0.1.7) só guia o movimento; um vídeo reproduzido também o completa e ele não é PAD |
 | Deepfake de vídeo | falso rosto responsivo | múltiplos controles + avaliação especializada | desconhecido/elevado |
 | Câmera virtual / frame injection | falsa origem do stream | validação de origem e desenho de confiança do sensor | não resolvido por software simples |
 | Rosto semelhante / gêmeos | falso match | limiar calibrado e avaliação específica | não mensurado; na 0.1.6 não há limiar e a similaridade não autoriza |
