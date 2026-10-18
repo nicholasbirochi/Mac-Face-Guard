@@ -22,6 +22,8 @@
 
 **0.1.7 (18/10/2026):** o cadastro ganhou um anel de giro (guia de movimento, não PAD). Limiares do anel ainda não calibrados com pessoas.
 
+**0.1.8 (18/10/2026):** o anel de cadastro passou para uma ilha no entalhe da câmera. Só interface; nada muda na decisão.
+
 ## Etapa 3 — Detecção de ataques
 
 **Entregas:** PAD com critérios e proveniência, qualidade/captura temporal, testes com fotos e telas, desafios ativos opcionais, relatório de erro.

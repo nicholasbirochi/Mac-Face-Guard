@@ -6,13 +6,13 @@ Experimento nativo de captura facial local para macOS. O foco atual é cadastrar
 
 *Ilustração representativa da interface implementada, sem imagens ou dados pessoais; não é captura de tela.*
 
-## Estado real: v0.1.7 experimental
+## Estado real: v0.1.8 experimental
 
 O app alinha o rosto por cinco pontos dos landmarks do Vision e extrai um vetor de 512 dimensões com o **EdgeFace XS** convertido localmente para Core ML. O cadastro guarda três vetores criptografados, presos ao hash do modelo e ao pré-processamento; a comparação mostra a similaridade do cosseno apenas como informação. Não há limiar de identidade calibrado, taxa de erro medida ou detector anti-spoofing (PAD). A decisão de autenticação permanece bloqueada, mesmo com similaridade alta.
 
 Não desbloqueia o macOS, não substitui Touch ID, senha ou FileVault e não solicita nem guarda a senha do Mac. Uma webcam RGB não oferece as garantias do Face ID. Veja [o estado e a validação](reports/STATUS_FINAL.md) e a [proposta de modelo facial e avaliação](reports/modelos-e-validacao.md).
 
-> **Situação atual:** a 0.1.7 instalada mantém o cadastro v2 e acrescenta o anel de giro. A 0.1.6 confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. PAD, limiar calibrado, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
+> **Situação atual:** a 0.1.8 instalada mantém o cadastro v2 e mostra o anel de giro numa ilha no entalhe da câmera, no topo da tela. A 0.1.6 confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. PAD, limiar calibrado, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
 
 ## O que ocorre ao bloquear ou reiniciar o Mac
 

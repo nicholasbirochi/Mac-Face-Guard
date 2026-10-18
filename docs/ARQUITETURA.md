@@ -54,6 +54,12 @@ EnrollmentUseCase -> EncryptedTemplateRepository -> CryptoKit/Keychain
 - Análise a cada 0,2 s no cadastro. Os limiares (0,07 para o anel, 0,2 para "nivelado") ainda não foram calibrados com pessoas.
 - O anel é guia de UX, não prova de vida: um vídeo gravado também o preenche. `DecisionEngine` continua recusando sempre.
 
+## Implementado em 0.1.8 (18/10/2026)
+
+- `NotchIsland` (app): painel sem borda e não ativador no nível da barra de menus, centrado no entalhe da câmera (ou abaixo da barra, em telas sem entalhe). Durante o cadastro, a ilha se abre do tamanho do entalhe até um cartão preto com o anel de giro, a prévia circular, as três amostras e um botão para cancelar; ao salvar, acende o anel inteiro com uma marca de confirmação e recolhe.
+- A ilha é só interface: a câmera continua ligada apenas com o app ativo, e `AppModel.stop` recolhe a ilha ao cancelar, expirar, suspender ou sair. A janela principal aponta para a ilha em vez de repetir o anel.
+- Nenhuma mudança em decisão, PAD ou desbloqueio: `DecisionEngine` continua recusando sempre.
+
 ## Testabilidade
 
 `starter/` já traz uma lógica pura de decisão em Swift Package Manager para validar política fail-closed; não contém webcam, reconhecimento nem autorização do sistema. Os adaptadores reais serão feitos no macOS e testados lá. Manter testes de mocks distintos de testes com câmera/modelos reais.

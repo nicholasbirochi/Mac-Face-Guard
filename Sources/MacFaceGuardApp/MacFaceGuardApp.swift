@@ -94,7 +94,7 @@ private let ink = Color(red: 0.055, green: 0.071, blue: 0.105)
 private let panel = Color(red: 0.09, green: 0.11, blue: 0.15)
 private let accent = Color(red: 0.40, green: 0.88, blue: 0.74)
 /// Verde do anel de giro, no tom do cadastro de rosto dos iPhones recentes.
-private let ringGreen = Color(red: 0.20, green: 0.84, blue: 0.40)
+let ringGreen = Color(red: 0.20, green: 0.84, blue: 0.40)
 
 struct ContentView: View {
     @ObservedObject var model: AppModel
@@ -163,7 +163,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.7 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.1.8 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }
@@ -183,25 +183,15 @@ struct ContentView: View {
         }.buttonStyle(.plain)
     }
 
-    /// Cadastro no estilo do iPhone: prévia circular, traços que acendem conforme o giro e a próxima direção.
-    private var enrollRing: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                RingTicks(ring: model.ring, diameter: 262)
-                CameraPreview(session: model.camera.session)
-                    .frame(width: 204, height: 204).clipShape(Circle())
-                Circle().stroke(model.sampleCount == 0 && model.poseReady ? ringGreen : .white.opacity(0.12), lineWidth: 2)
-                    .frame(width: 204, height: 204)
-            }.frame(width: 262, height: 262)
-            VStack(spacing: 5) {
-                Text(model.captureHint).font(.system(size: 17, weight: .semibold, design: .rounded)).foregroundStyle(.white)
-                Text(model.sampleCount == 0 ? model.guidance : "Anel \(Int(model.ring.coverage * 100))% • amostra \(model.sampleCount) de 3")
-                    .font(.system(size: 11)).foregroundStyle(.white.opacity(0.6))
-            }.multilineTextAlignment(.center).padding(.horizontal, 24)
-                .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: model.captureHint)
-        }.padding(.top, 18)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Cadastro facial. Anel de giro em \(Int(model.ring.coverage * 100)) por cento, \(model.sampleCount) de 3 amostras. \(model.captureHint)")
+    /// O anel de giro aparece na ilha, no entalhe; a janela só aponta para lá.
+    private var enrollPointer: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "arrow.up").font(.system(size: 30, weight: .semibold)).foregroundStyle(ringGreen)
+            Text("Siga o anel na ilha, no topo da tela").font(.system(size: 17, weight: .semibold, design: .rounded))
+            Text(model.sampleCount == 0 ? model.guidance : "Anel \(Int(model.ring.coverage * 100))% • amostra \(model.sampleCount) de 3")
+                .font(.system(size: 12)).foregroundStyle(.white.opacity(0.6))
+        }.multilineTextAlignment(.center).padding(.horizontal, 24)
+            .accessibilityElement(children: .combine)
     }
 
     private func metric(_ title: String, value: String, icon: String) -> some View {
@@ -223,7 +213,7 @@ struct ContentView: View {
                     Color.black.opacity(0.35)
                     if model.active && model.tab == "Cadastro" {
                         Color.black
-                        enrollRing
+                        enrollPointer
                     } else if model.active {
                         CameraPreview(session: model.camera.session)
                     } else {
@@ -344,15 +334,17 @@ struct ContentView: View {
 }
 
 /// Traços radiais do anel: cinza até a direção ser percorrida, verde depois. O traço 0 fica à direita, em sentido anti-horário.
-private struct RingTicks: View {
+struct RingTicks: View {
     let ring: RotationRing
     let diameter: CGFloat
+    /// Acende todos os traços, como no fim do cadastro do iPhone.
+    var allLit = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
             ForEach(0..<ring.segmentCount, id: \.self) { index in
-                let lit = ring.covered[index]
+                let lit = allLit || ring.covered[index]
                 Capsule()
                     .fill(lit ? ringGreen : .white.opacity(0.25))
                     .frame(width: lit ? 20 : 13, height: 3)
@@ -362,11 +354,12 @@ private struct RingTicks: View {
             }
         }.frame(width: diameter, height: diameter)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: ring.covered)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.35), value: allLit)
             .accessibilityHidden(true)
     }
 }
 
-private final class PreviewSurface: NSView {
+final class PreviewSurface: NSView {
     let preview = AVCaptureVideoPreviewLayer()
     override init(frame: NSRect) {
         super.init(frame: frame)
@@ -378,7 +371,7 @@ private final class PreviewSurface: NSView {
     override func layout() { super.layout(); preview.frame = bounds }
 }
 
-private struct CameraPreview: NSViewRepresentable {
+struct CameraPreview: NSViewRepresentable {
     let session: AVCaptureSession
     func makeNSView(context: Context) -> PreviewSurface {
         let view = PreviewSurface()

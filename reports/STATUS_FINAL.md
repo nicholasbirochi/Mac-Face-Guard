@@ -68,4 +68,10 @@ Cadastro com anel de giro (`RotationRing`): prévia circular espelhada, 60 traç
 
 Evidências: 54 testes sintéticos com zero falhas (6 do anel); build Release assinado e `codesign --verify --deep --strict` aprovado no app instalado. O cadastro real pela câmera depende do usuário; o cadastro não foi lido nem decifrado.
 
+## Ajuste 0.1.8 — 18/10/2026
+
+Cadastro na ilha (`NotchIsland`): o anel de giro, a prévia circular e as amostras aparecem num painel preto que se abre a partir do entalhe da câmera, no estilo da Dynamic Island, e recolhe com confirmação ao salvar. A janela principal só aponta para a ilha. Sem mudança em decisão, PAD ou desbloqueio. Versão 0.1.8, build 9.
+
+Evidências: 54 testes sintéticos com zero falhas; build Release assinado, `--self-check-keychain` aprovado e `codesign --verify --deep --strict` aprovado no app instalado. A aparência da ilha com a câmera real depende do cadastro feito pelo usuário e não foi conferida pelo desenvolvedor.
+
 Continua não implementado/validado: PAD, limiar calibrado, FMR/FNMR/APCER/BPCER, paridade do alinhamento com a referência em OpenCV, cadastro e comparação reais pela câmera (dependem do usuário) e desbloqueio do macOS. A decisão continua sempre recusada.
