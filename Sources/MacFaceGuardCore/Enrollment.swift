@@ -43,6 +43,60 @@ public enum EnrollmentCipher {
     }
 }
 
+/// Cadastro v2: vetores do modelo facial, presos ao hash do pacote, à dimensão e ao pré-processamento.
+public struct EnrollmentV2: Codable, Equatable, Sendable {
+    public static let sampleCount = 3
+    public let version: Int
+    public let modelID: String
+    public let modelSHA256: String
+    public let dimension: Int
+    public let preprocessing: String
+    public let embeddings: [[Float]]
+
+    public init(model: FaceModelDescriptor, embeddings: [[Float]]) {
+        version = 2
+        modelID = model.id
+        modelSHA256 = model.packageSHA256
+        dimension = model.dimension
+        preprocessing = model.preprocessing
+        self.embeddings = embeddings
+    }
+
+    /// Recusa registro de outro modelo, outra dimensão, outro alinhamento ou vetor inválido.
+    public func validate(for model: FaceModelDescriptor) throws {
+        guard version == 2, modelID == model.id, modelSHA256 == model.packageSHA256,
+              dimension == model.dimension, preprocessing == model.preprocessing,
+              embeddings.count == Self.sampleCount else { throw EnrollmentError.invalidRecord }
+        do {
+            for vector in embeddings { try FaceEmbedding.validate(vector, dimension: dimension) }
+        } catch { throw EnrollmentError.invalidRecord }
+    }
+
+    /// Maior similaridade do cosseno entre a amostra e o cadastro; apenas informativa.
+    public func bestSimilarity(to probe: [Float]) throws -> Float {
+        try embeddings.map { try FaceEmbedding.cosine($0, probe, dimension: dimension) }.max() ?? -1
+    }
+}
+
+public enum EnrollmentCipherV2 {
+    private static let context = Data("MacFaceGuard.enrollment.v2".utf8)
+
+    public static func seal(_ enrollment: EnrollmentV2, key: SymmetricKey, model: FaceModelDescriptor) throws -> Data {
+        try enrollment.validate(for: model)
+        let box = try AES.GCM.seal(JSONEncoder().encode(enrollment), using: key, authenticating: context)
+        guard let data = box.combined else { throw EnrollmentError.invalidEnvelope }
+        return data
+    }
+
+    public static func open(_ data: Data, key: SymmetricKey, model: FaceModelDescriptor) throws -> EnrollmentV2 {
+        guard data.count >= 28, data.count < 1_000_000 else { throw EnrollmentError.invalidEnvelope }
+        let plaintext = try AES.GCM.open(AES.GCM.SealedBox(combined: data), using: key, authenticating: context)
+        let enrollment = try JSONDecoder().decode(EnrollmentV2.self, from: plaintext)
+        try enrollment.validate(for: model)
+        return enrollment
+    }
+}
+
 public enum CapturePose: Int, CaseIterable, Sendable {
     case center, eitherSide, oppositeSide
 

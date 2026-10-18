@@ -8,8 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		0528749B1C78B724848497E3 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D1CE3296B5B1D9BFA07CB1 /* AppModel.swift */; };
+		1C700253EAED54913A5E3724 /* FaceEmbedding.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B97839D6269287973FF980 /* FaceEmbedding.swift */; };
 		37C2DBF79F496CBCC80EFABC /* Enrollment.swift in Sources */ = {isa = PBXBuildFile; fileRef = C91DCEA7D33FEAC77F05CCCF /* Enrollment.swift */; };
+		4DBE8B55B31047B7889E4B8F /* FaceAlignment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6F1745F8523B12DB30335AE /* FaceAlignment.swift */; };
 		58E083EC98B1411AA24AAE33 /* FaceGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DAAB756C3C2B3C1CA233511 /* FaceGeometry.swift */; };
+		65D1222BDB95BDFA0A161FDA /* EdgeFaceExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C271AEB91A8214C7B8E71F34 /* EdgeFaceExtractor.swift */; };
 		792F5CC63E8BF5D0440A09EC /* TemplateVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = E17F708B751F498D5A8B4DE0 /* TemplateVault.swift */; };
 		9A641307402F2741F5F1983D /* CameraPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5996E6BCC345331DB84EF839 /* CameraPipeline.swift */; };
 		9CAB1B03D6B489FA45938274 /* DecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E0A9F997F4AC13F17A748B /* DecisionEngine.swift */; };
@@ -49,8 +52,11 @@
 		400E5255CFEBDB37FB704958 /* MacFaceGuardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacFaceGuardApp.swift; sourceTree = "<group>"; };
 		5996E6BCC345331DB84EF839 /* CameraPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPipeline.swift; sourceTree = "<group>"; };
 		85D1CE3296B5B1D9BFA07CB1 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		C271AEB91A8214C7B8E71F34 /* EdgeFaceExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeFaceExtractor.swift; sourceTree = "<group>"; };
 		C91DCEA7D33FEAC77F05CCCF /* Enrollment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enrollment.swift; sourceTree = "<group>"; };
 		D1460005E661015182575815 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
+		D4B97839D6269287973FF980 /* FaceEmbedding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceEmbedding.swift; sourceTree = "<group>"; };
+		D6F1745F8523B12DB30335AE /* FaceAlignment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceAlignment.swift; sourceTree = "<group>"; };
 		E17F708B751F498D5A8B4DE0 /* TemplateVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateVault.swift; sourceTree = "<group>"; };
 		E5E0A9F997F4AC13F17A748B /* DecisionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionEngine.swift; sourceTree = "<group>"; };
 		E62D413A99B4B59793F4FFF7 /* MacFaceGuard.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacFaceGuard.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -73,6 +79,7 @@
 			children = (
 				85D1CE3296B5B1D9BFA07CB1 /* AppModel.swift */,
 				5996E6BCC345331DB84EF839 /* CameraPipeline.swift */,
+				C271AEB91A8214C7B8E71F34 /* EdgeFaceExtractor.swift */,
 				400E5255CFEBDB37FB704958 /* MacFaceGuardApp.swift */,
 				E17F708B751F498D5A8B4DE0 /* TemplateVault.swift */,
 			);
@@ -85,6 +92,8 @@
 			children = (
 				E5E0A9F997F4AC13F17A748B /* DecisionEngine.swift */,
 				C91DCEA7D33FEAC77F05CCCF /* Enrollment.swift */,
+				D6F1745F8523B12DB30335AE /* FaceAlignment.swift */,
+				D4B97839D6269287973FF980 /* FaceEmbedding.swift */,
 				0DAAB756C3C2B3C1CA233511 /* FaceGeometry.swift */,
 			);
 			name = MacFaceGuardCore;
@@ -215,6 +224,8 @@
 			files = (
 				9CAB1B03D6B489FA45938274 /* DecisionEngine.swift in Sources */,
 				37C2DBF79F496CBCC80EFABC /* Enrollment.swift in Sources */,
+				4DBE8B55B31047B7889E4B8F /* FaceAlignment.swift in Sources */,
+				1C700253EAED54913A5E3724 /* FaceEmbedding.swift in Sources */,
 				58E083EC98B1411AA24AAE33 /* FaceGeometry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -225,6 +236,7 @@
 			files = (
 				0528749B1C78B724848497E3 /* AppModel.swift in Sources */,
 				9A641307402F2741F5F1983D /* CameraPipeline.swift in Sources */,
+				65D1222BDB95BDFA0A161FDA /* EdgeFaceExtractor.swift in Sources */,
 				E68E5A1344211084E082CEEC /* MacFaceGuardApp.swift in Sources */,
 				792F5CC63E8BF5D0440A09EC /* TemplateVault.swift in Sources */,
 			);

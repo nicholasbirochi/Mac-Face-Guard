@@ -14,7 +14,9 @@ struct TemplateVault {
     private var directory: URL {
         manager.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/MacFaceGuard/private", isDirectory: true)
     }
+    /// Cadastro v1 (descritores do Vision), só lido para saber que existe; v2 é o cadastro do modelo facial.
     private var file: URL { directory.appendingPathComponent("enrollment.aesgcm") }
+    private var fileV2: URL { directory.appendingPathComponent("enrollment-v2.aesgcm") }
     private var query: [String: Any] {
         [kSecClass as String: kSecClassGenericPassword,
          kSecAttrService as String: "com.macfaceguard.local.template-key.v1",
@@ -22,7 +24,9 @@ struct TemplateVault {
          kSecUseDataProtectionKeychain as String: true,
          kSecAttrSynchronizable as String: false]
     }
-    var exists: Bool { manager.fileExists(atPath: file.path) }
+    var exists: Bool { hasLegacy || hasV2 }
+    var hasLegacy: Bool { manager.fileExists(atPath: file.path) }
+    var hasV2: Bool { manager.fileExists(atPath: fileV2.path) }
 
     func prepare(context: LAContext) throws {
         if try readKey(context: context) == nil {
@@ -33,20 +37,19 @@ struct TemplateVault {
         }
     }
 
-    func load(context: LAContext) throws -> Enrollment {
-        let attributes = try manager.attributesOfItem(atPath: file.path)
-        guard attributes[.type] as? FileAttributeType == .typeRegular,
-              ((attributes[.size] as? NSNumber)?.intValue ?? Int.max) < 1_000_000 else {
-            throw GuardError.message("O cadastro local não é válido. Exclua-o e cadastre novamente.")
-        }
+    func load(context: LAContext, model: FaceModelDescriptor) throws -> EnrollmentV2 {
+        guard hasV2 else { throw GuardError.message("Refaça o cadastro: o cadastro antigo não usa o modelo facial.") }
+        let data = try readPrivate(fileV2)
         guard let key = try readKey(context: context) else {
             throw GuardError.message("A chave local não está disponível. O cadastro não será aceito.")
         }
-        return try EnrollmentCipher.open(Data(contentsOf: file), key: key)
+        do { return try EnrollmentCipherV2.open(data, key: key, model: model) }
+        catch { throw GuardError.message("O cadastro não confere com o modelo instalado. Refaça o cadastro.") }
     }
 
-    func save(_ enrollment: Enrollment, context: LAContext) throws {
-        try enrollment.validate()
+    /// Grava o v2 de forma atômica; o v1 só é removido depois que o v2 foi gravado e protegido.
+    func save(_ enrollment: EnrollmentV2, model: FaceModelDescriptor, context: LAContext) throws {
+        try enrollment.validate(for: model)
         try manager.createDirectory(at: directory, withIntermediateDirectories: true,
                                     attributes: [.posixPermissions: 0o700])
         let attributes = try manager.attributesOfItem(atPath: directory.path)
@@ -62,16 +65,30 @@ struct TemplateVault {
         let key = existingKey ?? SymmetricKey(size: .bits256)
         if existingKey == nil { try addKey(key, context: context) }
         do {
-            let data = try EnrollmentCipher.seal(enrollment, key: key)
-            try data.write(to: file, options: .atomic)
-            try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: file.path)
-            var privateFile = file
+            let data = try EnrollmentCipherV2.seal(enrollment, key: key, model: model)
+            try data.write(to: fileV2, options: .atomic)
+            try manager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileV2.path)
+            var privateFile = fileV2
             try privateFile.setResourceValues(values)
         } catch {
             // A chave de um cadastro anterior é preservada se a atualização falhar.
             if existingKey == nil { SecItemDelete(query as CFDictionary) }
             throw error
         }
+        // Releitura antes de apagar o v1: se o v2 não abrir, o v1 fica e o erro sobe.
+        guard try EnrollmentCipherV2.open(readPrivate(fileV2), key: key, model: model) == enrollment else {
+            throw GuardError.message("O novo cadastro não pôde ser conferido. O cadastro anterior foi mantido.")
+        }
+        if hasLegacy { try? manager.removeItem(at: file) }
+    }
+
+    private func readPrivate(_ url: URL) throws -> Data {
+        let attributes = try manager.attributesOfItem(atPath: url.path)
+        guard attributes[.type] as? FileAttributeType == .typeRegular,
+              ((attributes[.size] as? NSNumber)?.intValue ?? Int.max) < 1_000_000 else {
+            throw GuardError.message("O cadastro local não é válido. Exclua-o e cadastre novamente.")
+        }
+        return try Data(contentsOf: url)
     }
 
     func delete() throws {
@@ -79,7 +96,8 @@ struct TemplateVault {
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw GuardError.message("Não foi possível excluir a chave do Chaves (\(status)).")
         }
-        if exists { try manager.removeItem(at: file) }
+        if hasV2 { try manager.removeItem(at: fileV2) }
+        if hasLegacy { try manager.removeItem(at: file) }
     }
 
     private func readKey(context: LAContext) throws -> SymmetricKey? {

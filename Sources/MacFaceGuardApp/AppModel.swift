@@ -1,6 +1,5 @@
 import SwiftUI
 import AVFoundation
-import Vision
 import LocalAuthentication
 import ServiceManagement
 import QuartzCore
@@ -20,7 +19,7 @@ final class AppModel: ObservableObject {
     @Published var turnProgress: Double = 0
     @Published var faceCount = 0
     @Published var quality: Float = 0
-    @Published var distance: Float?
+    @Published var similarity: Float?
     @Published var loginEnabled = false
     @Published var loginMessage = ""
     @Published var error: String?
@@ -30,8 +29,9 @@ final class AppModel: ObservableObject {
     private var run: UUID?
     private var context: LAContext?
     private var mode = ""
-    private var samples: [Data] = []
-    private var reference: [VNFeaturePrintObservation] = []
+    private var samples: [[Float]] = []
+    private var reference: EnrollmentV2?
+    private var extractor: EdgeFaceExtractor?
     private var lastCapture: TimeInterval = 0
     private var expiry: Task<Void, Never>?
     private var frames: CaptureFrameGate?
@@ -66,17 +66,12 @@ final class AppModel: ObservableObject {
                 throw GuardError.message("Touch ID não confirmou a operação.")
             }
             guard run == operation else { return }
+            // Sem modelo íntegro não há câmera nem comparação: hash, interface e dimensão são conferidos antes.
+            let loaded = try await Task.detached(priority: .userInitiated) { try EdgeFaceExtractor() }.value
+            guard run == operation else { return }
+            extractor = loaded
             if enrolling { try vault.prepare(context: auth) }
-            else {
-                let record = try vault.load(context: auth)
-                reference = try record.samples.map { data in
-                    guard let feature = try NSKeyedUnarchiver.unarchivedObject(ofClass: VNFeaturePrintObservation.self, from: data),
-                          feature.requestRevision == record.revision else {
-                        throw GuardError.message("Cadastro incompatível. Faça um novo cadastro.")
-                    }
-                    return feature
-                }
-            }
+            else { reference = try vault.load(context: auth, model: loaded.descriptor) }
             let authorized: Bool
             switch AVCaptureDevice.authorizationStatus(for: .video) {
             case .authorized: authorized = true
@@ -88,7 +83,7 @@ final class AppModel: ObservableObject {
             mode = enrolling ? "enroll" : "compare"
             samples = []
             sampleCount = 0
-            distance = nil
+            similarity = nil
             lastCapture = 0
             firstTurn = nil
             neutralYaw = nil
@@ -98,7 +93,7 @@ final class AppModel: ObservableObject {
             poseReady = false
             activation.prepare(operation)
             status = "Touch ID confirmado • aguardando a janela"
-            guidance = enrolling ? "Olhe de frente para a câmera." : "Olhe de frente. A distância visual não confirma sua identidade."
+            guidance = enrolling ? "Olhe de frente para a câmera." : "Olhe de frente. A similaridade não confirma sua identidade."
             expiry = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(enrolling ? 90 : 45))
                 guard !Task.isCancelled, let self, self.run == operation else { return }
@@ -114,12 +109,12 @@ final class AppModel: ObservableObject {
     }
 
     func foregrounded() {
-        guard let run, consent, activation.consume(run, isForeground: NSApp.isActive) else { return }
+        guard let run, consent, let extractor, activation.consume(run, isForeground: NSApp.isActive) else { return }
         frames = CaptureFrameGate(startedAt: CACurrentMediaTime())
         active = true
         busy = false
         status = mode == "enroll" ? "Cadastro em andamento" : "Comparação experimental"
-        camera.start(run: run) { [weak self] frame in
+        camera.start(run: run, extractor: extractor) { [weak self] frame in
             Task { @MainActor in self?.receive(frame) }
         }
     }
@@ -134,12 +129,12 @@ final class AppModel: ObservableObject {
             error = frame.message
             return
         }
-        guard let print = frame.print, frame.count == 1 else {
+        guard let embedding = frame.embedding, frame.count == 1 else {
             status = frame.message
             captureHint = frame.message
             poseReady = false
             turnProgress = 0
-            distance = nil
+            similarity = nil
             return
         }
         if mode == "enroll" {
@@ -162,7 +157,7 @@ final class AppModel: ObservableObject {
             captureHint = !qualityEnough ? "Procure mais luz no rosto." : poseReady ? "Posição detectada. Segure um instante…" : samples.isEmpty ? "Olhe de frente e mantenha o rosto centralizado." : abs(yaw) > 0.65 ? "Virou demais. Volte um pouco, mantendo os olhos visíveis." : !correctSide ? "Agora para o outro lado, passando pelo centro." : "Vire devagar até a barra completar."
             guard poseReady, frame.capturedAt - lastCapture > 1.2 else { return }
             do {
-                samples.append(try NSKeyedArchiver.archivedData(withRootObject: print, requiringSecureCoding: true))
+                samples.append(embedding)
                 if samples.count == 1 { neutralYaw = frame.yaw; neutralTurn = frame.turn }
                 if samples.count == 2 { firstTurn = yaw }
                 sampleCount = samples.count
@@ -170,12 +165,13 @@ final class AppModel: ObservableObject {
                 NSSound(named: "Tink")?.play()
                 poseReady = false
                 turnProgress = 0
-                if samples.count == 3 {
-                    guard let context else { throw GuardError.message("A sessão de cadastro expirou.") }
-                    try vault.save(Enrollment(revision: 2, samples: samples), context: context)
+                if samples.count == EnrollmentV2.sampleCount {
+                    guard let context, let extractor else { throw GuardError.message("A sessão de cadastro expirou.") }
+                    try vault.save(EnrollmentV2(model: extractor.descriptor, embeddings: samples),
+                                   model: extractor.descriptor, context: context)
                     hasEnrollment = true
                     stop(message: "Seu cadastro foi criptografado neste Mac")
-                    guidance = "Três amostras salvas. Nenhuma foto ou vídeo foi gravado."
+                    guidance = "Três vetores faciais salvos. Nenhuma foto ou vídeo foi gravado."
                 } else {
                     status = "Amostra \(samples.count) de 3 capturada"
                     guidance = samples.count == 1 ? "Vire um pouco para um dos lados" : "Agora, vire para o lado oposto"
@@ -187,15 +183,9 @@ final class AppModel: ObservableObject {
             }
         } else {
             do {
-                let values = try reference.map { observation -> Float in
-                    var value: Float = 0
-                    try print.computeDistance(&value, to: observation)
-                    guard value.isFinite, value >= 0 else { throw GuardError.message("Distância visual inválida.") }
-                    return value
-                }
-                guard let best = values.min() else { throw GuardError.message("Cadastro ausente.") }
-                distance = best
-                // shortcut: feature prints medem semelhança de imagem; substituir por modelo facial e PAD avaliados antes de autorizar.
+                guard let reference else { throw GuardError.message("Cadastro ausente.") }
+                similarity = try reference.bestSimilarity(to: embedding)
+                // shortcut: sem PAD e sem limiar validado com dados locais, a similaridade não autoriza acesso.
                 let decision = DecisionEngine().evaluate(DemoEvidence(cameraAuthorized: true,
                     enrollmentExists: true, singleFaceDetected: true, captureQualityApproved: true,
                     identityMatched: false, livenessPassed: false, framesConsistent: true,
@@ -203,7 +193,7 @@ final class AppModel: ObservableObject {
                 if case .denied = decision { status = "Semelhança medida • autenticação bloqueada" }
             } catch {
                 stop(message: "Comparação interrompida")
-                self.error = "Não foi possível comparar o cadastro com segurança. Cadastre novamente se a versão do Vision mudou."
+                self.error = "Não foi possível comparar o cadastro com segurança. Nenhum acesso foi autorizado."
             }
         }
     }
@@ -226,9 +216,10 @@ final class AppModel: ObservableObject {
         neutralYaw = nil
         neutralTurn = nil
         turnProgress = 0
-        distance = nil
+        similarity = nil
         samples.removeAll()
-        reference.removeAll()
+        reference = nil
+        extractor = nil
         status = message
     }
 
