@@ -40,6 +40,13 @@ EnrollmentUseCase -> EncryptedTemplateRepository -> CryptoKit/Keychain
 - Cadastro, redefinição, exportação e exclusão exigem presença/autorização legítima do proprietário.
 - Logs sem frames, IDs biométricos, vetor de embedding, senha ou nome da conta macOS.
 
+## Implementado em 0.1.6 (18/10/2026)
+
+- `FaceAlignment` (núcleo, puro): cinco pontos dos landmarks do Vision → similaridade ArcFace para 112×112, com recusa para pontos inválidos, reflexão, escala fora de (0,07; 1,5), inclinação ≥ 45° e ajuste ruim (RMS ≥ 8 px); warp bilinear BGRA com preenchimento zero.
+- `FaceEmbeddingProvider` concreto: `EdgeFaceExtractor` (app) carrega o EdgeFace XS convertido localmente, confere o SHA-256 do pacote numa cópia privada, confere a interface (112×112 → 512) e roda só na CPU. Sem modelo ou com hash divergente, nada é comparado.
+- `TemplateVault`: cadastro v2 (`enrollment-v2.aesgcm`, AAD própria) com três embeddings normalizados, id do modelo e versão do pré-processamento; o v1 só é apagado depois de o v2 ser gravado e relido.
+- `DecisionEngine` continua recusando sempre: sem PAD, a similaridade é apenas informativa.
+
 ## Testabilidade
 
 `starter/` já traz uma lógica pura de decisão em Swift Package Manager para validar política fail-closed; não contém webcam, reconhecimento nem autorização do sistema. Os adaptadores reais serão feitos no macOS e testados lá. Manter testes de mocks distintos de testes com câmera/modelos reais.

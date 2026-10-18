@@ -18,6 +18,8 @@
 
 **Aceite:** identificação sob diferentes poses/iluminação medida; Keychain e CryptoKit auditáveis; redefinição protegida; falha em ausência de modelos; ausência de armazenamento de imagens por padrão.
 
+**Situação em 0.1.6 (18/10/2026): parcial.** Entregues: EdgeFace XS (BSD-3-Clause) convertido localmente com hash fixado, alinhamento por cinco pontos, cadastro v2 com três poses e embeddings cifrados, recusa sem modelo ou com hash divergente, exclusão protegida por Touch ID. Pendentes: amostra humana (hoje 0), limiar calibrado, FMR/FNMR por pose e iluminação, paridade do alinhamento com a referência em Python. Nenhuma autorização é concedida antes do PAD (Etapa 3).
+
 ## Etapa 3 — Detecção de ataques
 
 **Entregas:** PAD com critérios e proveniência, qualidade/captura temporal, testes com fotos e telas, desafios ativos opcionais, relatório de erro.

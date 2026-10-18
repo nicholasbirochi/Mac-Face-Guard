@@ -19,6 +19,12 @@
 - Silent Face Anti Spoofing: https://github.com/minivision-ai/Silent-Face-Anti-Spoofing — Apache-2.0 para repositório (confirmar license e pesos individualmente); verificar manutenção e vulnerabilidades nas dependências legadas.
 - InsightFace: https://github.com/deepinsight/insightface — código MIT, modelos pré-treinados oficialmente limitados a pesquisa não comercial, verificar licenciamento antes de distribuir.
 
+## Modelo em uso na 0.1.6 (18/10/2026)
+
+- EdgeFace XS gamma 0.6: https://github.com/otroshi/edgeface — BSD-3-Clause conforme o repositório; revisão `ce86851cfc37979a9cd2558598d0e9bc592cbba3`, arquivo `checkpoints/edgeface_xs_gamma_06.pt` (7.170.425 bytes, SHA-256 `5ae7504cd9aee0a5d52c2115fd2eb66b0985dd1730f40134b5854e0cb658ce16`).
+- Conversão local por `scripts/convert-edgeface.py`; pacote `EdgeFaceXS.mlpackage` com digest SHA-256 `036326e60212ab3773a6b3bb2d312655cc4a2707e738c0807bc2341d82f0edee`, conferido pelo app antes de carregar.
+- Pesos e pacote convertido ficam em `~/Library/Caches/MacFaceGuard/edgeface-build/`, fora do Git e do `.app`; o MacFaceGuard não os redistribui.
+
 ## Avisos de responsabilidade
 
 - A licença do código de uma biblioteca NÃO implica a mesma licença dos pesos de rede neural, datasets e binários distribuídos por terceiros.
