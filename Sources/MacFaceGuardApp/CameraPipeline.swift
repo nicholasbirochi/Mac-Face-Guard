@@ -18,6 +18,8 @@ struct FrameAnalysis: @unchecked Sendable {
     var lift: Double? = nil
     /// O buffer analisado já chega espelhado; define o sentido horizontal do anel.
     var mirrored = false
+    /// PAD passivo do quadro (só na comparação); informativo, nunca autoriza.
+    var presentation: PresentationAssessment? = nil
 }
 
 final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate, @unchecked Sendable {
@@ -28,13 +30,16 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     private var lastTimestamp = CMTime.invalid
     private var callback: (@Sendable (FrameAnalysis) -> Void)?
     private var extractor: EdgeFaceExtractor?
+    private var detector: PresentationAttackDetector?
 
-    func start(run: UUID, extractor: EdgeFaceExtractor, callback: @escaping @Sendable (FrameAnalysis) -> Void) {
+    func start(run: UUID, extractor: EdgeFaceExtractor, detector: PresentationAttackDetector? = nil,
+               callback: @escaping @Sendable (FrameAnalysis) -> Void) {
         queue.async { [self] in
             stopOnQueue()
             self.run = run
             self.callback = callback
             self.extractor = extractor
+            self.detector = detector
             do {
                 guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
                     throw GuardError.message("A câmera não foi autorizada.")
@@ -77,6 +82,7 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         run = nil
         callback = nil
         extractor = nil
+        detector = nil
         if session.isRunning { session.stopRunning() }
         session.beginConfiguration()
         for input in session.inputs { session.removeInput(input) }
@@ -146,16 +152,20 @@ final class CameraPipeline: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
                     throw GuardError.message("Formato de quadro inesperado.")
                 }
                 let aligned: [UInt8]
+                var presentation: PresentationAssessment?
                 do {
                     defer { CVPixelBufferUnlockBaseAddress(pixels, .readOnly) }
                     guard let base = CVPixelBufferGetBaseAddress(pixels) else { throw AlignmentError.invalidImage }
                     let rowBytes = CVPixelBufferGetBytesPerRow(pixels)
-                    aligned = try FaceAlignment.warp(UnsafeRawBufferPointer(start: base, count: rowBytes * height),
-                        width: width, height: height, bytesPerRow: rowBytes, transform: transform)
+                    let frame = UnsafeRawBufferPointer(start: base, count: rowBytes * height)
+                    aligned = try FaceAlignment.warp(frame, width: width, height: height, bytesPerRow: rowBytes, transform: transform)
+                    // Falha do PAD derruba o quadro inteiro: nenhum quadro segue sem avaliação na comparação.
+                    presentation = try detector?.assess(frame: frame, width: width, height: height, bytesPerRow: rowBytes, visionBox: box)
                 }
                 let embedding = try extractor.embedding(alignedBGRA: aligned)
                 callback(FrameAnalysis(run: run, count: 1, quality: quality, yaw: yaw, turn: turn, embedding: embedding,
-                    capturedAt: now, message: "Rosto detectado. Siga a orientação ao lado.", lift: lift, mirrored: mirrored))
+                    capturedAt: now, message: "Rosto detectado. Siga a orientação ao lado.", lift: lift, mirrored: mirrored,
+                    presentation: presentation))
             } catch {
                 callback(FrameAnalysis(run: run, count: 0, quality: 0, yaw: 0, turn: nil, embedding: nil,
                     capturedAt: now, message: "A análise deste quadro falhou. Nenhuma autorização foi concedida."))

@@ -22,6 +22,7 @@ struct MacFaceGuardApp: App {
         if CommandLine.arguments.contains("--self-check-model") {
             do {
                 print(try EdgeFaceExtractor.selfCheck())
+                print(try PresentationAttackDetector.selfCheck())
                 exit(0)
             } catch {
                 print((error as? GuardError)?.localizedDescription ?? "MODEL_CHECK_FAILED")
@@ -129,7 +130,7 @@ struct ContentView: View {
                         Image(systemName: "flask.fill").foregroundStyle(.orange)
                         VStack(alignment: .leading, spacing: 5) {
                             Text("Laboratório de comparação visual").font(.system(size: 13, weight: .semibold))
-                            Text("Ainda não há reconhecimento facial nem prova de vida validados. A comparação usa o EdgeFace XS local, mede uma similaridade informativa e não autoriza acesso. Este app não desbloqueia o macOS.")
+                            Text("Ainda não há reconhecimento facial nem prova de vida validados. A comparação usa o EdgeFace XS e o anti-fraude MiniFASNet locais, mede valores informativos e não autoriza acesso. Este app não desbloqueia o macOS.")
                                 .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -247,6 +248,11 @@ struct ContentView: View {
                     if let similarity = model.similarity {
                         Text("Similaridade: \(similarity, specifier: "%.3f") • informativa, não autentica")
                             .font(.system(size: 11, design: .monospaced)).foregroundStyle(accent)
+                        if let presentation = model.presentation {
+                            Text("Anti-fraude: \(presentationLabel(presentation.label)) • real \(presentation.realScore, specifier: "%.2f") • informativo")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(presentation.spoofSuspected ? Color.orange : Color.secondary)
+                        }
                     } else {
                         Text(model.active ? "\(model.faceCount) rosto(s) • qualidade: \(Int(model.quality * 100))%" : "Nenhum quadro é enviado à internet.")
                             .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -262,7 +268,7 @@ struct ContentView: View {
                     step(2, title: "Complete o anel de giro", text: "Olhe de frente e depois mova a cabeça em círculo, devagar.")
                     step(3, title: "Guarde neste Mac", text: "Vetores faciais criptografados, sem fotos.")
                 } else {
-                    Text("O EdgeFace XS gera um vetor do rosto alinhado e mede a similaridade do cosseno com suas três amostras. Sem prova de vida e sem limiar validado, nada é autorizado.")
+                    Text("O EdgeFace XS gera um vetor do rosto alinhado e mede a similaridade do cosseno com suas três amostras. O MiniFASNet estima se o quadro parece foto, tela ou máscara, com limiar ainda não calibrado. Não é prova de vida e, sem limiar de identidade validado, nada é autorizado.")
                         .font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if model.active {
@@ -290,6 +296,14 @@ struct ContentView: View {
                     .font(.system(size: 10)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(20).frame(width: 250, alignment: .leading)
                 .background(panel, in: RoundedRectangle(cornerRadius: 15))
+        }
+    }
+
+    private func presentationLabel(_ label: PresentationLabel) -> String {
+        switch label {
+        case .real: "parece real"
+        case .fake2D: "possível foto ou tela"
+        case .fake3D: "possível máscara"
         }
     }
 

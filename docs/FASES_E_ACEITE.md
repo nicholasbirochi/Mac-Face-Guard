@@ -24,6 +24,8 @@
 
 **0.1.8 (18/10/2026):** o anel de cadastro passou para uma ilha no entalhe da câmera. Só interface; nada muda na decisão.
 
+**0.1.9 (18/10/2026):** primeira entrega parcial da Etapa 3: MiniFASNet (Apache-2.0) convertido localmente e usado só na comparação, como informação. Limiar 0,8 e sequência de 3 quadros não calibrados; sem ensaio de ataques, APCER ou BPCER. A Etapa 3 não está aceita e nada é autorizado.
+
 ## Etapa 3 — Detecção de ataques
 
 **Entregas:** PAD com critérios e proveniência, qualidade/captura temporal, testes com fotos e telas, desafios ativos opcionais, relatório de erro.

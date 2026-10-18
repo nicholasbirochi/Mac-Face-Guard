@@ -25,6 +25,13 @@
 - Conversão local por `scripts/convert-edgeface.py`; pacote `EdgeFaceXS.mlpackage` com digest SHA-256 `036326e60212ab3773a6b3bb2d312655cc4a2707e738c0807bc2341d82f0edee`, conferido pelo app antes de carregar.
 - Pesos e pacote convertido ficam em `~/Library/Caches/MacFaceGuard/edgeface-build/`, fora do Git e do `.app`; o MacFaceGuard não os redistribui.
 
+## Modelo PAD em uso na 0.1.9 (18/10/2026)
+
+- Silent-Face-Anti-Spoofing: https://github.com/minivision-ai/Silent-Face-Anti-Spoofing — `LICENSE` Apache 2.0 na revisão `b6d5f04ad78778917853b25c778acef6d5626d15`; os pesos são distribuídos no mesmo repositório, sem licença separada. Download autorizado pelo usuário em 18/10/2026.
+- Pesos: `resources/anti_spoof_models/2.7_80x80_MiniFASNetV2.pth` (SHA-256 `a5eb02e1843f19b5386b953cc4c9f011c3f985d0ee2bb9819eea9a142099bec0`) e `4_0_0_80x80_MiniFASNetV1SE.pth` (SHA-256 `84ee1d37d96894d5e82de5a57df044ef80a58be2b218b5ed7cdfd875ec2f5990`); arquitetura em `src/model_lib/MiniFASNet.py` (SHA-256 `e498c4ec5e1ddfaba62b941a126c19d65aa564999f3309661fe43ee8bf38acd7`).
+- Conversão local por `scripts/convert-minifasnet.py` (torch 2.7.1, coremltools 9.0): pacote `MiniFASNetPAD.mlpackage` com digest SHA-256 `ee53d0da53d02ba7771d850dde8748d6bf71800186a97c7c53c5cfbba52d78fa`, conferido pelo app antes de carregar.
+- Pesos e pacote convertido ficam em `~/Library/Caches/MacFaceGuard/minifasnet-build/`, fora do Git e do `.app`; o MacFaceGuard não os redistribui.
+
 ## Avisos de responsabilidade
 
 - A licença do código de uma biblioteca NÃO implica a mesma licença dos pesos de rede neural, datasets e binários distribuídos por terceiros.

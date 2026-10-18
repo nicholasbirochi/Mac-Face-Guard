@@ -12,15 +12,15 @@ Pessoa com acesso físico temporário, alguém com foto pública do proprietári
 
 | Ameaça | Impacto | Controles necessários | Risco residual |
 |---|---|---|---|
-| Foto impressa | acesso indevido à demo | PAD + testes variados | ainda presente até medir |
-| Foto em celular | acesso indevido à demo | PAD refletância, movimento temporal | ainda presente |
-| Vídeo gravado | replay de movimentos | desafios aleatórios + PAD temporal | elevado/não comprovado; o anel de giro do cadastro (0.1.7) só guia o movimento; um vídeo reproduzido também o completa e ele não é PAD |
+| Foto impressa | acesso indevido à demo | PAD + testes variados | ainda presente até medir. Na 0.1.9 o MiniFASNet (PAD passivo) só informa a comparação: limiar 0,8 não calibrado, sem ensaio com ataques reais; nada é autorizado. |
+| Foto em celular | acesso indevido à demo | PAD refletância, movimento temporal | ainda presente. Na 0.1.9 o MiniFASNet (PAD passivo) só informa a comparação: limiar 0,8 não calibrado, sem ensaio com ataques reais; nada é autorizado. |
+| Vídeo gravado | replay de movimentos | desafios aleatórios + PAD temporal | elevado/não comprovado; o anel de giro do cadastro (0.1.7) só guia o movimento; um vídeo reproduzido também o completa e ele não é PAD. O PAD da 0.1.9 avalia quadros isolados, não consistência temporal, e não foi testado contra replay |
 | Deepfake de vídeo | falso rosto responsivo | múltiplos controles + avaliação especializada | desconhecido/elevado |
 | Câmera virtual / frame injection | falsa origem do stream | validação de origem e desenho de confiança do sensor | não resolvido por software simples |
 | Rosto semelhante / gêmeos | falso match | limiar calibrado e avaliação específica | não mensurado; na 0.1.6 não há limiar e a similaridade não autoriza |
 | Roubo de templates | exposição de dado biométrico | AES-GCM, Keychain, `ThisDeviceOnly`, privilégio mínimo | depende da segurança do endpoint |
 | Roubo de chave por sessão comprometida | exposição | acesso biométrico/device owner com LAContext, expiração | não elimina malware em sessão |
-| Falha de dependência/modelo | execução maliciosa | pin/assinatura/hash, auditoria e SBOM | exige manutenção; na 0.1.6 revisão upstream, checkpoint e pacote Core ML têm SHA-256 fixado e conferido antes do uso |
+| Falha de dependência/modelo | execução maliciosa | pin/assinatura/hash, auditoria e SBOM | exige manutenção; na 0.1.6 revisão upstream, checkpoint e pacote Core ML têm SHA-256 fixado e conferido antes do uso; na 0.1.9 o mesmo vale para os dois pesos do MiniFASNet, o `MiniFASNet.py` importado na conversão e o pacote `MiniFASNetPAD.mlpackage` |
 | Alteração de configuração | PAD desativado | configurações protegidas, defaults restritivos | deve ser testado |
 | Falha de câmera / ausência de rede | erro interpretado como sucesso | negar por padrão, sem fallback inseguro | baixo se implementado |
 | Login via senha injetada | divulgação de credencial/uso em foco errado | **não implementar** | eliminado do escopo |

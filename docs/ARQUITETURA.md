@@ -60,6 +60,13 @@ EnrollmentUseCase -> EncryptedTemplateRepository -> CryptoKit/Keychain
 - A ilha é só interface: a câmera continua ligada apenas com o app ativo, e `AppModel.stop` recolhe a ilha ao cancelar, expirar, suspender ou sair. A janela principal aponta para a ilha em vez de repetir o anel.
 - Nenhuma mudança em decisão, PAD ou desbloqueio: `DecisionEngine` continua recusando sempre.
 
+## Implementado em 0.1.9 (18/10/2026)
+
+- `PresentationAttack` (núcleo, puro): converte a caixa do Vision em pixels, amplia em 2,7 e 4,0 como `CropImage._get_new_box` da referência, reamostra para 80×80 como `cv2.resize` linear e lê a saída [falso 2D, real, falso 3D]. Probabilidades inválidas (tamanho, NaN, soma distante de 1) são erro; empate nunca favorece "real". "Vivo" exige classe real e pontuação ≥ 0,8, limiar experimental não calibrado.
+- `PresentationAttackDetector` (app): MiniFASNetV2 + MiniFASNetV1SE num único pacote Core ML convertido localmente; copia para pasta `0700`, confere o digest SHA-256, compila, confere a interface e roda só em CPU. Pacote ausente, adulterado ou incompatível impede a comparação de começar.
+- Só na comparação: cada quadro precisa de avaliação PAD; falha derruba o quadro e encerra a comparação. `PresentationStreak` exige 3 quadros "vivos" seguidos. `DecisionEngine` recebe `spoofSuspected` e a sequência, mas `identityMatched` continua falso: suspeita vira `possibleSpoof`, o resto continua recusado. O cadastro não usa PAD.
+- Aproximação: a referência recorta pela caixa do RetinaFace; aqui é a caixa do Vision. PAD passivo não é prova de vida ativa e não foi testado contra fotos, telas, vídeos ou máscaras reais.
+
 ## Testabilidade
 
 `starter/` já traz uma lógica pura de decisão em Swift Package Manager para validar política fail-closed; não contém webcam, reconhecimento nem autorização do sistema. Os adaptadores reais serão feitos no macOS e testados lá. Manter testes de mocks distintos de testes com câmera/modelos reais.
