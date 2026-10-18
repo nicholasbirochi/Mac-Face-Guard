@@ -77,11 +77,11 @@ struct UnlockPanel: View {
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Como funciona").font(.system(size: 17, weight: .semibold, design: .rounded))
-                step("Bloqueie o Mac", "Bloquear não liga a câmera.")
-                step("Desperte a tela", "Com a tela bloqueada, a câmera liga por até 15 segundos.")
+                step("Bloqueie ou desperte o Mac", "A ilha verde aparece no entalhe e a câmera liga por até 15 segundos.")
                 step("Olhe para a câmera", "Rosto reconhecido em 2 quadros e anti-fraude real em 3 seguidos.")
-                step("Entrou", "A senha é digitada no campo de login e a câmera desliga.")
-                Text("Rosto errado, mais de um rosto, suspeita de fraude ou tempo esgotado: a câmera desliga e você digita a senha. São até 3 tentativas por bloqueio.")
+                step("Entrou", "A carinha confirma, a senha é digitada no campo de login e a câmera desliga.")
+                step("Não foi?", "Passe o cursor sobre a ilha para tentar de novo. Ela também tenta sozinha uma vez.")
+                Text("Rosto errado, mais de um rosto, suspeita de fraude ou tempo esgotado: a câmera desliga e você pode digitar a senha. Depois de 3 rostos recusados no mesmo bloqueio, só a senha.")
                     .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(20).frame(width: 270, alignment: .leading)
                 .background(panel, in: RoundedRectangle(cornerRadius: 15))

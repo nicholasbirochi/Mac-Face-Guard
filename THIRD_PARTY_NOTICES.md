@@ -2,7 +2,13 @@
 
 ## Glance
 
-`Sources/MacFaceGuardApp/KeystrokeInjector.swift` e `Sources/MacFaceGuardApp/LockMonitor.swift` foram adaptados de [Glance](https://github.com/jonnyoo/glance).
+Adaptados de [Glance](https://github.com/jonnyoo/glance):
+
+- `Sources/MacFaceGuardApp/KeystrokeInjector.swift` e `Sources/MacFaceGuardApp/LockMonitor.swift`;
+- `Sources/MacFaceGuardApp/NotchOverlay/` (ilha do entalhe, animações e janela na tela de bloqueio), modificados: sem onboarding nem ajustes, ligados ao `UnlockCoordinator`;
+- `Resources/Unlock/` (`unlockanimation.mp4`, `unsuccessfulunlockanimation.mp4`, `unlockstatic.png`), recoloridos de verde por `scripts/tint-glance-assets.sh`.
+
+`NotchOverlay/NotchSkyLight.swift` usa a técnica de espaço SkyLight que o Glance adaptou de [Lakr233/SkyLightWindow](https://github.com/Lakr233/SkyLightWindow) (MIT).
 
 ```
 MIT License
