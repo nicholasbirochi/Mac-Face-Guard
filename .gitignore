@@ -16,3 +16,10 @@ captures/
 xcuserdata/
 *.xcuserstate
 *.provisionprofile
+
+# Modelos faciais e pesos: convertidos localmente, nunca versionados
+*.mlpackage
+*.mlmodelc
+*.pt
+*.pth
+*.onnx

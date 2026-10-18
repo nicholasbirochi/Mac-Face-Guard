@@ -18,6 +18,15 @@ struct MacFaceGuardApp: App {
                 exit(1)
             }
         }
+        if CommandLine.arguments.contains("--self-check-model") {
+            do {
+                print(try EdgeFaceExtractor.selfCheck())
+                exit(0)
+            } catch {
+                print((error as? GuardError)?.localizedDescription ?? "MODEL_CHECK_FAILED")
+                exit(1)
+            }
+        }
         if CommandLine.arguments.contains("--register-login-item") {
             do {
                 try SMAppService.mainApp.register()
@@ -117,7 +126,7 @@ struct ContentView: View {
                         Image(systemName: "flask.fill").foregroundStyle(.orange)
                         VStack(alignment: .leading, spacing: 5) {
                             Text("Laboratório de comparação visual").font(.system(size: 13, weight: .semibold))
-                            Text("Ainda não há reconhecimento facial nem prova de vida validados. A comparação usa descritores de imagem do Vision e não autoriza acesso. Este app não desbloqueia o macOS.")
+                            Text("Ainda não há reconhecimento facial nem prova de vida validados. A comparação usa o EdgeFace XS local, mede uma similaridade informativa e não autoriza acesso. Este app não desbloqueia o macOS.")
                                 .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -151,7 +160,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.5 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.1.6 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }
@@ -248,8 +257,8 @@ struct ContentView: View {
                 }.frame(height: 360).clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, topTrailingRadius: 15))
                 VStack(alignment: .leading, spacing: 6) {
                     Text(model.status).font(.system(size: 12, weight: .medium)).lineLimit(2)
-                    if let distance = model.distance {
-                        Text("Distância visual: \(distance, specifier: "%.3f") • menor = mais semelhante")
+                    if let similarity = model.similarity {
+                        Text("Similaridade: \(similarity, specifier: "%.3f") • informativa, não autentica")
                             .font(.system(size: 11, design: .monospaced)).foregroundStyle(accent)
                     } else {
                         Text(model.active ? "\(model.faceCount) rosto(s) • qualidade: \(Int(model.quality * 100))%" : "Nenhum quadro é enviado à internet.")
@@ -259,14 +268,14 @@ struct ContentView: View {
             }.clipShape(RoundedRectangle(cornerRadius: 15)).frame(maxWidth: .infinity)
 
             VStack(alignment: .leading, spacing: 19) {
-                Text(model.tab == "Comparação" ? "Comparar visualmente" : "Cadastre seu rosto")
+                Text(model.tab == "Comparação" ? "Comparação experimental" : "Cadastre seu rosto")
                     .font(.system(size: 19, weight: .semibold, design: .rounded))
                 if model.tab == "Cadastro" {
                     step(1, title: "Confirme com Touch ID", text: "Só você autoriza o cadastro.")
                     step(2, title: "Olhe para três posições", text: "De frente e levemente para cada lado.")
-                    step(3, title: "Guarde neste Mac", text: "Descritores criptografados, sem fotos.")
+                    step(3, title: "Guarde neste Mac", text: "Vetores faciais criptografados, sem fotos.")
                 } else {
-                    Text("O Vision compara características visuais com suas três amostras. Não existe limiar de identidade nem autorização de acesso.")
+                    Text("O EdgeFace XS gera um vetor do rosto alinhado e mede a similaridade do cosseno com suas três amostras. Sem prova de vida e sem limiar validado, nada é autorizado.")
                         .font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if model.active {
@@ -275,7 +284,7 @@ struct ContentView: View {
                     Button("Encerrar sessão") { model.stop() }.buttonStyle(.bordered).controlSize(.large)
                 } else {
                     Toggle(isOn: $model.consent) {
-                        Text("Autorizo o uso local da câmera e dos descritores do meu rosto.")
+                        Text("Autorizo o uso local da câmera e dos vetores faciais do meu rosto.")
                             .font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
                     }.toggleStyle(.checkbox).disabled(model.busy)
                     Button {
@@ -311,7 +320,7 @@ struct ContentView: View {
     private var privacy: some View {
         VStack(alignment: .leading, spacing: 22) {
             Label("O que fica no seu Mac", systemImage: "internaldrive").font(.headline)
-            Text("Três descritores de imagem e a versão do Vision. O arquivo é protegido com AES-256-GCM em ~/Library/Application Support/MacFaceGuard/private. A chave fica no Chaves, sem sincronização, com proteção pelo conjunto atual de biometrias.")
+            Text("Três vetores faciais de 512 números, o identificador e o hash do modelo e a versão do alinhamento. O modelo fica em ~/Library/Caches/MacFaceGuard, fora do app e do Git. O arquivo é protegido com AES-256-GCM em ~/Library/Application Support/MacFaceGuard/private. A chave fica no Chaves, sem sincronização, com proteção pelo conjunto atual de biometrias.")
                 .font(.system(size: 13)).foregroundStyle(.secondary).textSelection(.enabled)
             Text("O diretório privado fica fora do OneDrive, do Git e da pasta do aplicativo. Ele é marcado para exclusão de backup; ferramentas que ignoram essa marcação ainda podem copiá-lo. Nunca mova o cadastro ou a chave para o repositório.")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
