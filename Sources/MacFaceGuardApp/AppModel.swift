@@ -26,6 +26,8 @@ final class AppModel: ObservableObject {
     @Published var error: String?
     @Published var tab = "Cadastro"
     let camera = CameraPipeline()
+    /// Painel no entalhe que mostra o anel de giro durante o cadastro.
+    let island = NotchIsland()
     private let vault = TemplateVault()
     private var run: UUID?
     private var context: LAContext?
@@ -120,6 +122,7 @@ final class AppModel: ObservableObject {
         camera.start(run: run, extractor: extractor) { [weak self] frame in
             Task { @MainActor in self?.receive(frame) }
         }
+        if mode == "enroll" { island.show(model: self) }
     }
 
     private func receive(_ frame: FrameAnalysis) {
@@ -183,6 +186,7 @@ final class AppModel: ObservableObject {
                                model: extractor.descriptor, context: context)
                 hasEnrollment = true
                 NSSound(named: "Glass")?.play()
+                island.close(success: true)
                 stop(message: "Seu cadastro foi criptografado neste Mac")
                 guidance = "Três vetores faciais salvos. Nenhuma foto ou vídeo foi gravado."
             } catch {
@@ -234,6 +238,7 @@ final class AppModel: ObservableObject {
         expiry?.cancel()
         expiry = nil
         camera.stop()
+        island.close(success: false)
         context?.invalidate()
         context = nil
         active = false

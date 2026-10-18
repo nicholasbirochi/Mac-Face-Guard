@@ -1,4 +1,4 @@
-# Mapa do projeto — MacFaceGuard v0.1.7
+# Mapa do projeto — MacFaceGuard v0.1.8
 
 Fonte: código local, atualizado em 18/10/2026. Mapa manual; não é saída Graphify.
 
@@ -25,3 +25,4 @@ Riscos e limites: feature print não verifica identidade; não há PAD, métrica
 
 - v0.1.6: `FaceAlignment.swift` (cinco pontos → similaridade → 112×112 BGRA), `FaceEmbedding.swift` (normalização L2, cosseno, descritor do modelo e digest do pacote), `EdgeFaceExtractor.swift` (cópia privada, hash, compilação e interface Core ML; `--self-check-model`). `Enrollment.swift` ganhou `EnrollmentV2`/`EnrollmentCipherV2`; `TemplateVault` grava `enrollment-v2.aesgcm` e só remove o v1 após reler o v2. `CameraPipeline` usa landmarks em vez de feature prints. Similaridade informativa; decisão sempre recusada sem PAD. Pesos fora do Git.
 - v0.1.7: `RotationRing.swift` (anel de 60 traços, cobertura e maior lacuna) e `FaceGeometry.noseLift`. `CameraPipeline` envia giro, altura do nariz e espelhamento a cada 0,2 s; `AppModel.traceRing` acende o anel e `ringPrompt` indica a direção; `MacFaceGuardApp` desenha prévia circular espelhada com traços verdes. Guia de UX, não PAD.
+- v0.1.8: `NotchIsland.swift` (`NSPanel` não ativador no entalhe, `NotchShape`, `IslandView` com anel, prévia, amostras e cancelar). `AppModel.foregrounded` abre a ilha no cadastro; `stop` e o salvamento a recolhem. `RingTicks`, `CameraPreview` e `ringGreen` deixaram de ser privados para a ilha reutilizá-los.
