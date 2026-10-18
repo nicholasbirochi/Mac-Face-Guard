@@ -5,8 +5,9 @@ import LocalAuthentication
 import QuartzCore
 import MacFaceGuardCore
 
-/// Desbloqueio facial no estilo do Glance: ao despertar com a tela bloqueada, liga a câmera por até 15 s,
-/// compara o rosto e, só com semelhança e anti-fraude aprovados, digita a senha guardada por Acessibilidade.
+/// Desbloqueio facial no estilo do Glance: ao bloquear ou despertar com a tela bloqueada, mostra a ilha no entalhe,
+/// liga a câmera por até 15 s, compara o rosto e, só com semelhança e anti-fraude aprovados, digita a senha guardada
+/// por Acessibilidade. Passar o cursor sobre a ilha tenta de novo.
 @MainActor
 final class UnlockCoordinator: ObservableObject {
     @Published private(set) var armed = false
@@ -25,7 +26,8 @@ final class UnlockCoordinator: ObservableObject {
     var beforeScan: (() -> Void)?
 
     private static let thresholdKey = "unlockThreshold"
-    private static let attemptsPerLock = 3
+    /// Rostos recusados (outra pessoa ou fraude) por bloqueio; depois disso só a senha digitada.
+    private static let failuresPerLock = 3
     private let vault = PasswordVault()
     private let templates = TemplateVault()
     private let monitor = LockMonitor()
@@ -37,9 +39,12 @@ final class UnlockCoordinator: ObservableObject {
     private var run: UUID?
     private var pending: Task<Void, Never>?
     private var watchdog: Task<Void, Never>?
+    private var autoRetry: Task<Void, Never>?
     private var lastWake: TimeInterval = 0
-    private var attempts = 0
+    private var failures = 0
+    private var autoRetried = false
     private var typed = false
+    private var overlay: NotchOverlayController { .shared }
 
     init() {
         let saved = UserDefaults.standard.object(forKey: Self.thresholdKey) as? Float
@@ -118,13 +123,15 @@ final class UnlockCoordinator: ObservableObject {
         detector = models.1
         monitor.start()
         armed = true
-        attempts = 0
-        typed = false
-        status = "Armado • bloqueie e desperte o Mac para usar o rosto"
+        resetLock()
+        status = "Armado • bloqueie o Mac para usar o rosto"
     }
 
     func disarm() {
         stopScan()
+        autoRetry?.cancel()
+        autoRetry = nil
+        overlay.disarm()
         monitor.stop()
         vault.disarm()
         reference = nil
@@ -158,58 +165,83 @@ final class UnlockCoordinator: ObservableObject {
         self.error = (error as? GuardError)?.localizedDescription ?? fallback
     }
 
-    // MARK: Gatilhos
+    // MARK: Gatilhos (mesmo fluxo do FaceUnlockCoordinator do Glance)
+
+    private func resetLock() {
+        failures = 0
+        autoRetried = false
+        typed = false
+    }
 
     private func handle(_ event: LockMonitor.Event) {
         switch event {
         case .locked:
-            // Bloquear não liga a câmera: quem bloqueia geralmente está saindo.
-            attempts = 0
-            typed = false
+            resetLock()
+            schedule(after: .milliseconds(550))
         case .unlocked:
             stopScan()
-            attempts = 0
-            typed = false
+            autoRetry?.cancel()
+            overlay.disarm()
+            resetLock()
             if armed { status = "Armado • Mac desbloqueado" }
         case .willSleep:
             stopScan()
+            autoRetry?.cancel()
+            overlay.dismissImmediately()
         case .wake:
+            // Vários sinais chegam juntos ao abrir a tampa; só o primeiro de cada 2 s conta.
             let now = CACurrentMediaTime()
-            guard armed, now - lastWake >= 2 else { return }
+            guard now - lastWake >= 2 else { return }
             lastWake = now
-            pending?.cancel()
-            pending = Task { [weak self] in
-                try? await Task.sleep(for: .milliseconds(300))
-                guard !Task.isCancelled, let self, !self.monitor.isSleeping else { return }
-                self.beginScan()
-            }
+            autoRetried = false
+            schedule(after: .milliseconds(550))
         }
     }
 
+    /// Espera o estado do WindowServer assentar, mostra a ilha fechada no entalhe e começa a procurar o rosto.
+    private func schedule(after delay: Duration) {
+        guard armed else { return }
+        pending?.cancel()
+        pending = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self, self.armed, !self.monitor.isSleeping, LockMonitor.isScreenLocked else { return }
+            self.overlay.arm { [weak self] in self?.beginScan() }
+            self.beginScan()
+        }
+    }
+
+    /// Chamado ao armar e sempre que o cursor passa sobre a ilha.
     private func beginScan() {
-        guard armed, !scanning, !typed, attempts < Self.attemptsPerLock, LockMonitor.isScreenLocked,
-              let extractor, let detector, reference != nil else { return }
+        guard armed, !scanning, !typed, failures < Self.failuresPerLock, LockMonitor.isScreenLocked,
+              !monitor.isSleeping, let extractor, let detector, reference != nil else { return }
         beforeScan?()
-        attempts += 1
+        autoRetry?.cancel()
+        autoRetry = nil
         let operation = UUID()
         run = operation
         gate = UnlockGate(threshold: threshold, started: CACurrentMediaTime())
         lastSimilarity = nil
         scanning = true
         status = "Tela bloqueada • procurando seu rosto"
+        overlay.beginScanning()
         camera.start(run: operation, extractor: extractor, detector: detector) { [weak self] frame in
             Task { @MainActor in self?.receive(frame) }
         }
         watchdog = Task { [weak self] in
             try? await Task.sleep(for: .seconds(16))
             guard !Task.isCancelled, let self, self.run == operation else { return }
-            self.stopScan(message: "Tempo esgotado • digite a senha")
+            self.stopScan(message: "Tempo esgotado • passe o cursor no entalhe para tentar de novo")
+            Task { await self.overlay.collapse() }
         }
     }
 
     private func receive(_ frame: FrameAnalysis) {
         guard frame.run == run, scanning, var gate, let reference else { return }
-        if frame.count < 0 { return stopScan(message: "Câmera indisponível • digite a senha") }
+        if frame.count < 0 {
+            stopScan(message: "Câmera indisponível • digite a senha")
+            Task { await overlay.collapse() }
+            return
+        }
         let similarity = frame.embedding.flatMap { try? reference.bestSimilarity(to: $0) }
         if let similarity { lastSimilarity = similarity }
         let step = gate.record(locked: LockMonitor.isScreenLocked, faceCount: frame.count, similarity: similarity,
@@ -217,14 +249,40 @@ final class UnlockCoordinator: ObservableObject {
         self.gate = gate
         switch step {
         case .continue: return
-        case .abort(.spoof): stopScan(message: "Possível fraude detectada • digite a senha")
-        case .abort(.wrongFace): stopScan(message: "Rosto não reconhecido • digite a senha")
-        case .abort(.timeout): stopScan(message: "Tempo esgotado • digite a senha")
-        case .abort(.notLocked): stopScan(message: "Armado • Mac desbloqueado")
+        case .abort(.spoof): refuse("Possível fraude detectada")
+        case .abort(.wrongFace): refuse("Rosto não reconhecido")
+        case .abort(.timeout):
+            stopScan(message: "Nenhum rosto detectado • passe o cursor no entalhe para tentar de novo")
+            Task { await overlay.collapse() }
+            scheduleAutoRetry(after: overlay.collapseAnimationDuration)
+        case .abort(.notLocked):
+            stopScan(message: "Armado • Mac desbloqueado")
+            overlay.disarm()
         case .unlock:
             stopScan(message: "Rosto reconhecido • desbloqueando")
             typed = true
+            overlay.finish(success: true)
             type()
+        }
+    }
+
+    private func refuse(_ reason: String) {
+        failures += 1
+        let left = Self.failuresPerLock - failures
+        stopScan(message: left > 0 ? "\(reason) • passe o cursor no entalhe para tentar de novo" : "\(reason) • digite a senha")
+        overlay.finish(success: false)
+        if left > 0 { scheduleAutoRetry(after: overlay.failureHoldDuration) }
+    }
+
+    /// Como o "tentar de novo uma vez" do Glance: espera a animação terminar e só repete se a ilha já fechou.
+    private func scheduleAutoRetry(after delay: Duration) {
+        guard !autoRetried else { return }
+        autoRetried = true
+        autoRetry?.cancel()
+        autoRetry = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self, LockMonitor.isScreenLocked, self.overlay.phase == .closed else { return }
+            self.beginScan()
         }
     }
 

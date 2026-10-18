@@ -81,7 +81,7 @@ private final class IslandPanel: NSPanel {
 }
 
 /// Contorno do entalhe: abas côncavas no alto e cantos largos embaixo.
-private struct NotchShape: Shape {
+private struct EnrollmentNotchShape: Shape {
     var bottomRadius: CGFloat
     var topRadius: CGFloat
     var animatableData: AnimatablePair<CGFloat, CGFloat> {
@@ -116,7 +116,7 @@ private struct IslandView: View {
         let height = open ? state.topInset + NotchIsland.openSize.height - 24 : state.closedSize.height
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
-                NotchShape(bottomRadius: open ? 44 : 10, topRadius: open ? 14 : 6)
+                EnrollmentNotchShape(bottomRadius: open ? 44 : 10, topRadius: open ? 14 : 6)
                     .fill(.black)
                 if open { content.transition(.opacity.combined(with: .scale(scale: 0.6, anchor: .top))) }
             }

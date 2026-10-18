@@ -1,36 +1,36 @@
 # MacFaceGuard
 
-Experimento nativo de captura facial local para macOS. O foco atual é cadastrar vetores de um modelo facial com consentimento e protegê-los no aparelho; a 0.2.0 acrescenta um desbloqueio facial experimental da tela bloqueada, no estilo do [Glance](https://github.com/jonnyoo/glance), com limiar não calibrado.
+Experimento nativo de captura facial local para macOS. O foco atual é cadastrar vetores de um modelo facial com consentimento e protegê-los no aparelho; a 0.2.x acrescenta um desbloqueio facial experimental da tela bloqueada, no estilo do [Glance](https://github.com/jonnyoo/glance), com limiar não calibrado.
 
 ![Ilustração da interface do MacFaceGuard, com câmera desligada e cadastro inicial](docs/images/interface.svg)
 
 *Ilustração representativa da interface implementada, sem imagens ou dados pessoais; não é captura de tela.*
 
-## Estado real: v0.2.0 experimental
+## Estado real: v0.2.1 experimental
 
 O app alinha o rosto por cinco pontos dos landmarks do Vision e extrai um vetor de 512 dimensões com o **EdgeFace XS** convertido localmente para Core ML. O cadastro guarda três vetores criptografados, presos ao hash do modelo e ao pré-processamento; a comparação mostra a similaridade do cosseno apenas como informação. Na comparação, o anti-fraude passivo **MiniFASNet** (Apache-2.0), também convertido localmente, estima se o quadro parece foto, tela ou máscara; o resultado é informativo, com limiar não calibrado e sem teste com ataques reais. Não há limiar de identidade calibrado nem taxa de erro medida. A comparação continua apenas informativa; só a aba **Desbloqueio**, armada pelo proprietário, pode agir.
 
 O desbloqueio facial digita a senha guardada na tela de bloqueio; não altera loginwindow, PAM, FileVault, TCC nem AuthorizationDB e não substitui a senha depois de reiniciar (FileVault). Uma webcam RGB não oferece as garantias do Face ID. Veja [o estado e a validação](reports/STATUS_FINAL.md) e a [proposta de modelo facial e avaliação](reports/modelos-e-validacao.md).
 
-> **Situação atual:** a 0.2.0 instalada acrescenta o desbloqueio facial experimental (abaixo); compilação, assinatura e testes sintéticos passaram, mas o desbloqueio real ainda não foi ensaiado pelo proprietário. A 0.1.9 acrescentou o anti-fraude MiniFASNet à comparação: suspeita de foto/tela/máscara aparece como "Possível fraude detectada" e a autenticação continua bloqueada em qualquer caso. O cadastro não usa o anti-fraude. A 0.1.8 levou o anel de giro do cadastro para uma ilha no entalhe da câmera. A 0.1.6 confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. Calibração e ensaio do PAD (APCER/BPCER), limiar de identidade, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
+> **Situação atual:** a 0.2.1 instalada copia a ilha do Glance: ao bloquear ou despertar, a ilha aparece no entalhe da própria tela de bloqueio, com a animação do rosto (em verde); passar o cursor sobre ela tenta de novo. Compilação, assinatura e testes sintéticos passaram, mas o desbloqueio real ainda não foi ensaiado pelo proprietário. A 0.2.0 trouxe o desbloqueio facial experimental. A 0.1.9 acrescentou o anti-fraude MiniFASNet à comparação: suspeita de foto/tela/máscara aparece como "Possível fraude detectada" e a autenticação continua bloqueada em qualquer caso. O cadastro não usa o anti-fraude. A 0.1.8 levou o anel de giro do cadastro para uma ilha no entalhe da câmera. A 0.1.6 confirmou assinatura, proteção do Chaves e integridade do modelo (`--self-check-model`, com imagem sintética). Cadastros anteriores (v1, feature prints do Vision) não são reaproveitados: a comparação pede um novo cadastro. Calibração e ensaio do PAD (APCER/BPCER), limiar de identidade, ensaio com pessoas e desbloqueio do macOS continuam pendentes. O cadastro do proprietário não foi decifrado pelo desenvolvedor.
 
 ## O que ocorre ao bloquear ou reiniciar o Mac
 
 Sem armar, nada muda: o app não toca a tela de bloqueio e a câmera fica desligada. A abertura automática inicia o app depois de entrar no macOS.
 
-**Desbloqueio facial (0.2.0, experimental, opcional).** Inspirado no Glance (MIT; `KeystrokeInjector` e `LockMonitor` adaptados, aviso em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). Na aba **Desbloqueio**:
+**Desbloqueio facial (0.2.1, experimental, opcional).** Copiado do Glance (MIT; ilha do entalhe, animações, `KeystrokeInjector` e `LockMonitor` adaptados; a carinha foi recolorida de verde; aviso em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). O reconhecimento continua sendo o EdgeFace + MiniFASNet do MacFaceGuard. Na aba **Desbloqueio**:
 
 1. Guarde a senha do Mac. Ela é conferida no diretório local (senha errada não é guardada), cifrada com AES-GCM e posta no Chaves; a chave exige Touch ID (`biometryCurrentSet`).
 2. Permita o MacFaceGuard em **Ajustes do Sistema → Privacidade e Segurança → Acessibilidade**, necessário para digitar.
 3. Clique em **Armar com Touch ID**. A chave fica só na memória até desarmar ou encerrar o app.
 
-Com o desbloqueio armado, bloquear não liga a câmera. Ao despertar a tela ou parar o descanso de tela com o Mac bloqueado, a câmera liga por até 15 s. A senha só é digitada (por eventos de teclado, seguida de Return) quando há exatamente um rosto, semelhança acima do limiar (padrão 0,50, ajustável de 0,35 a 0,80) em 2 quadros seguidos e o MiniFASNet indica rosto real em 3 seguidos; o bloqueio é relido logo antes de digitar. Suspeita de fraude, rosto errado por 2 s, mais de um rosto ou tempo esgotado desligam a câmera, com até 3 tentativas por bloqueio.
+Com o desbloqueio armado, ao bloquear o Mac, despertar a tela ou parar o descanso de tela com o Mac bloqueado, a ilha verde aparece no entalhe sobre a tela de bloqueio (janela no espaço SkyLight, API privada que pode quebrar em atualizações do macOS) e a câmera liga por até 15 s. Passar o cursor sobre a ilha tenta de novo, com resposta tátil; sem rosto ou com rosto recusado, ela tenta sozinha mais uma vez. A senha só é digitada (por eventos de teclado, seguida de Return) quando há exatamente um rosto, semelhança acima do limiar (padrão 0,50, ajustável de 0,35 a 0,80) em 2 quadros seguidos e o MiniFASNet indica rosto real em 3 seguidos; o bloqueio é relido logo antes de digitar. Suspeita de fraude, rosto errado por 2 s, mais de um rosto ou tempo esgotado desligam a câmera; depois de 3 rostos recusados no mesmo bloqueio, só a senha digitada.
 
 **Risco:** uma webcam 2D é bem mais fraca que o Face ID. Foto, tela ou vídeo do seu rosto podem enganar o reconhecimento e o anti-fraude, cujos limiares não foram calibrados. Não use onde alguém possa ter interesse em entrar no seu Mac. Depois de reiniciar, o FileVault continua pedindo a senha.
 
 ## Barra de menus
 
-O MacFaceGuard fica no ícone de rosto na barra superior do macOS, sem ícone no Dock. Clique nele e escolha **Abrir MacFaceGuard** para cadastrar ou comparar. Fechar a janela mantém o ícone disponível; **Sair** encerra o app. O desbloqueio facial só funciona enquanto o app está aberto e armado; depois de reiniciar, é preciso armá-lo de novo.
+O MacFaceGuard fica no ícone de rosto na barra superior do macOS, sem ícone no Dock. Clique nele e escolha **Abrir MacFaceGuard** para cadastrar ou comparar. Fechar a janela mantém o ícone disponível; **Sair** encerra o app. O desbloqueio facial só funciona enquanto o app está aberto e armado; sempre que o app for aberto de novo (inclusive depois de reiniciar ou atualizar), é preciso armá-lo outra vez com Touch ID, porque a chave fica só na memória.
 
 ## Primeiro cadastro
 

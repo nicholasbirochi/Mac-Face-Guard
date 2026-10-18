@@ -23,6 +23,8 @@ targets:
       - path: Sources/MacFaceGuardApp
       - path: docs/images/AppIcon.icns
         buildPhase: resources
+      - path: Resources/Unlock
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.macfaceguard.local
