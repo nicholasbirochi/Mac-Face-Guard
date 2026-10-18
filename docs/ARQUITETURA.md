@@ -47,6 +47,13 @@ EnrollmentUseCase -> EncryptedTemplateRepository -> CryptoKit/Keychain
 - `TemplateVault`: cadastro v2 (`enrollment-v2.aesgcm`, AAD própria) com três embeddings normalizados, id do modelo e versão do pré-processamento; o v1 só é apagado depois de o v2 ser gravado e relido.
 - `DecisionEngine` continua recusando sempre: sem PAD, a similaridade é apenas informativa.
 
+## Implementado em 0.1.7 (18/10/2026)
+
+- `RotationRing` (núcleo, puro): 60 traços; cada deslocamento do nariz em relação à posição frontal (horizontal por `noseOffset`, vertical por `FaceGeometry.noseLift`) acende o traço daquela direção e dois vizinhos. O anel conclui com 95% aceso e aponta o maior trecho apagado para orientar o próximo movimento.
+- Cadastro no estilo do iPhone: prévia circular espelhada, traços cinza que ficam verdes, direção seguinte em texto. A frente é a primeira amostra; as duas laterais exigem cabeça nivelada. Só grava com anel completo e três vetores.
+- Análise a cada 0,2 s no cadastro. Os limiares (0,07 para o anel, 0,2 para "nivelado") ainda não foram calibrados com pessoas.
+- O anel é guia de UX, não prova de vida: um vídeo gravado também o preenche. `DecisionEngine` continua recusando sempre.
+
 ## Testabilidade
 
 `starter/` já traz uma lógica pura de decisão em Swift Package Manager para validar política fail-closed; não contém webcam, reconhecimento nem autorização do sistema. Os adaptadores reais serão feitos no macOS e testados lá. Manter testes de mocks distintos de testes com câmera/modelos reais.

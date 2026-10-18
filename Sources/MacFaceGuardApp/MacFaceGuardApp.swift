@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import ServiceManagement
+import MacFaceGuardCore
 
 @main
 struct MacFaceGuardApp: App {
@@ -92,6 +93,8 @@ private struct GuardMenu: View {
 private let ink = Color(red: 0.055, green: 0.071, blue: 0.105)
 private let panel = Color(red: 0.09, green: 0.11, blue: 0.15)
 private let accent = Color(red: 0.40, green: 0.88, blue: 0.74)
+/// Verde do anel de giro, no tom do cadastro de rosto dos iPhones recentes.
+private let ringGreen = Color(red: 0.20, green: 0.84, blue: 0.40)
 
 struct ContentView: View {
     @ObservedObject var model: AppModel
@@ -160,7 +163,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.6 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.1.7 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }
@@ -180,6 +183,27 @@ struct ContentView: View {
         }.buttonStyle(.plain)
     }
 
+    /// Cadastro no estilo do iPhone: prévia circular, traços que acendem conforme o giro e a próxima direção.
+    private var enrollRing: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                RingTicks(ring: model.ring, diameter: 262)
+                CameraPreview(session: model.camera.session)
+                    .frame(width: 204, height: 204).clipShape(Circle())
+                Circle().stroke(model.sampleCount == 0 && model.poseReady ? ringGreen : .white.opacity(0.12), lineWidth: 2)
+                    .frame(width: 204, height: 204)
+            }.frame(width: 262, height: 262)
+            VStack(spacing: 5) {
+                Text(model.captureHint).font(.system(size: 17, weight: .semibold, design: .rounded)).foregroundStyle(.white)
+                Text(model.sampleCount == 0 ? model.guidance : "Anel \(Int(model.ring.coverage * 100))% • amostra \(model.sampleCount) de 3")
+                    .font(.system(size: 11)).foregroundStyle(.white.opacity(0.6))
+            }.multilineTextAlignment(.center).padding(.horizontal, 24)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: model.captureHint)
+        }.padding(.top, 18)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Cadastro facial. Anel de giro em \(Int(model.ring.coverage * 100)) por cento, \(model.sampleCount) de 3 amostras. \(model.captureHint)")
+    }
+
     private func metric(_ title: String, value: String, icon: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -197,12 +221,11 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 ZStack {
                     Color.black.opacity(0.35)
-                    if model.active {
+                    if model.active && model.tab == "Cadastro" {
+                        Color.black
+                        enrollRing
+                    } else if model.active {
                         CameraPreview(session: model.camera.session)
-                        RoundedRectangle(cornerRadius: 95)
-                            .stroke(model.poseReady ? accent : .white.opacity(0.6), style: StrokeStyle(lineWidth: 2, dash: [10, 6]))
-                            .frame(width: 160, height: 200).offset(y: -25)
-                            .accessibilityHidden(true)
                     } else {
                         VStack(spacing: 18) {
                             Image(systemName: "faceid").font(.system(size: 68, weight: .ultraLight)).foregroundStyle(accent.opacity(0.75))
@@ -217,44 +240,18 @@ struct ContentView: View {
                                 .font(.system(size: 9, weight: .semibold, design: .monospaced))
                                 .foregroundStyle(model.active ? accent : .secondary)
                             Spacer()
+                            if model.active && model.tab == "Cadastro" {
+                                HStack(spacing: 6) {
+                                    ForEach(0..<3) { step in
+                                        Circle().fill(step < model.sampleCount ? ringGreen : .white.opacity(0.22))
+                                            .frame(width: 8, height: 8)
+                                    }
+                                }.accessibilityHidden(true)
+                            }
                         }
                         Spacer()
                     }.padding(16)
-                    if model.active && model.tab == "Cadastro" {
-                        VStack(spacing: 10) {
-                            HStack(spacing: 10) {
-                                ForEach(0..<3) { step in
-                                    ZStack {
-                                        Circle().fill(step < model.sampleCount ? accent : .black.opacity(0.65))
-                                        if step < model.sampleCount {
-                                            Image(systemName: "checkmark").foregroundStyle(ink)
-                                        } else {
-                                            Text("\(step + 1)").foregroundStyle(step == model.sampleCount ? accent : .white.opacity(0.65))
-                                        }
-                                    }.font(.system(size: 12, weight: .bold)).frame(width: 28, height: 28)
-                                }
-                            }.padding(.top, 36)
-                            Spacer()
-                            VStack(spacing: 7) {
-                                HStack(spacing: 9) {
-                                    Image(systemName: model.sampleCount == 0 ? "person.crop.rectangle" : model.sampleCount == 1 ? "arrow.left.and.right" : "arrow.uturn.backward")
-                                        .font(.system(size: 22, weight: .semibold))
-                                        .symbolEffect(.pulse, isActive: !reduceMotion && !model.poseReady)
-                                    Text(model.guidance).font(.system(size: 18, weight: .semibold, design: .rounded))
-                                }.foregroundStyle(accent)
-                                Text(model.captureHint).font(.system(size: 12)).foregroundStyle(.white)
-                                if model.sampleCount > 0 {
-                                    ProgressView(value: model.turnProgress).tint(accent)
-                                        .accessibilityLabel("Movimento da cabeça")
-                                        .accessibilityValue("\(Int(model.turnProgress * 100)) por cento")
-                                }
-                            }.multilineTextAlignment(.center).frame(maxWidth: .infinity)
-                                .padding(14).background(.black.opacity(0.80), in: RoundedRectangle(cornerRadius: 13))
-                                .padding(12)
-                        }.accessibilityElement(children: .combine)
-                            .accessibilityLabel("Passo \(model.sampleCount + 1) de 3. \(model.guidance). \(model.captureHint)")
-                    }
-                }.frame(height: 360).clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, topTrailingRadius: 15))
+                }.frame(height: 380).clipShape(UnevenRoundedRectangle(topLeadingRadius: 15, topTrailingRadius: 15))
                 VStack(alignment: .leading, spacing: 6) {
                     Text(model.status).font(.system(size: 12, weight: .medium)).lineLimit(2)
                     if let similarity = model.similarity {
@@ -272,14 +269,14 @@ struct ContentView: View {
                     .font(.system(size: 19, weight: .semibold, design: .rounded))
                 if model.tab == "Cadastro" {
                     step(1, title: "Confirme com Touch ID", text: "Só você autoriza o cadastro.")
-                    step(2, title: "Olhe para três posições", text: "De frente e levemente para cada lado.")
+                    step(2, title: "Complete o anel de giro", text: "Olhe de frente e depois mova a cabeça em círculo, devagar.")
                     step(3, title: "Guarde neste Mac", text: "Vetores faciais criptografados, sem fotos.")
                 } else {
                     Text("O EdgeFace XS gera um vetor do rosto alinhado e mede a similaridade do cosseno com suas três amostras. Sem prova de vida e sem limiar validado, nada é autorizado.")
                         .font(.system(size: 13)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if model.active {
-                    Text(model.tab == "Cadastro" ? "Acompanhe as setas e o progresso na própria imagem." : model.guidance)
+                    Text(model.tab == "Cadastro" ? "O anel só guia o movimento: não é prova de vida." : model.guidance)
                         .font(.system(size: 13, weight: .medium)).foregroundStyle(accent).fixedSize(horizontal: false, vertical: true)
                     Button("Encerrar sessão") { model.stop() }.buttonStyle(.bordered).controlSize(.large)
                 } else {
@@ -346,6 +343,29 @@ struct ContentView: View {
     }
 }
 
+/// Traços radiais do anel: cinza até a direção ser percorrida, verde depois. O traço 0 fica à direita, em sentido anti-horário.
+private struct RingTicks: View {
+    let ring: RotationRing
+    let diameter: CGFloat
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<ring.segmentCount, id: \.self) { index in
+                let lit = ring.covered[index]
+                Capsule()
+                    .fill(lit ? ringGreen : .white.opacity(0.25))
+                    .frame(width: lit ? 20 : 13, height: 3)
+                    .offset(x: diameter / 2 - (lit ? 10 : 6.5))
+                    // A tela tem y para baixo; o anel conta ângulos com y para cima.
+                    .rotationEffect(.radians(-ring.angle(of: index)))
+            }
+        }.frame(width: diameter, height: diameter)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.25), value: ring.covered)
+            .accessibilityHidden(true)
+    }
+}
+
 private final class PreviewSurface: NSView {
     let preview = AVCaptureVideoPreviewLayer()
     override init(frame: NSRect) {
@@ -363,8 +383,16 @@ private struct CameraPreview: NSViewRepresentable {
     func makeNSView(context: Context) -> PreviewSurface {
         let view = PreviewSurface()
         view.preview.session = session
+        Self.mirror(view.preview)
         return view
     }
-    func updateNSView(_ view: PreviewSurface, context: Context) {}
+    func updateNSView(_ view: PreviewSurface, context: Context) { Self.mirror(view.preview) }
+    /// Prévia como espelho: a direita da pessoa aparece à direita, como o anel orienta.
+    private static func mirror(_ layer: AVCaptureVideoPreviewLayer) {
+        guard let connection = layer.connection, connection.isVideoMirroringSupported,
+              !connection.isVideoMirrored || connection.automaticallyAdjustsVideoMirroring else { return }
+        connection.automaticallyAdjustsVideoMirroring = false
+        connection.isVideoMirrored = true
+    }
     static func dismantleNSView(_ view: PreviewSurface, coordinator: ()) { view.preview.session = nil }
 }

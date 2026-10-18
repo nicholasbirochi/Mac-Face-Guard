@@ -11,6 +11,16 @@ public enum FaceGeometry {
         return abs(offset) <= 1 ? offset : nil
     }
 
+    /// Altura do nariz em relação à linha dos olhos (y para cima), na escala da distância entre os olhos.
+    /// Cresce quando a pessoa olha para cima, porque a ponta do nariz fica à frente do plano dos olhos.
+    public static func noseLift(nose: Double, leftEyeX: Double, leftEyeY: Double, rightEyeX: Double, rightEyeY: Double) -> Double? {
+        guard [nose, leftEyeX, leftEyeY, rightEyeX, rightEyeY].allSatisfy({ $0.isFinite && (0...1).contains($0) }) else { return nil }
+        let separation = abs(rightEyeX - leftEyeX)
+        guard separation >= 0.05 else { return nil }
+        let lift = (nose - (leftEyeY + rightEyeY) / 2) / separation
+        return abs(lift) <= 2 ? lift : nil
+    }
+
     /// Só une caixas quase idênticas; rostos separados, parcialmente sobrepostos ou pequenos permanecem distintos.
     public static func uniqueFaceIndices(_ boxes: [CGRect]) -> [Int] {
         var kept: [Int] = []
