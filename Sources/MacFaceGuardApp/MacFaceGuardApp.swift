@@ -5,7 +5,8 @@ import MacFaceGuardCore
 
 @main
 struct MacFaceGuardApp: App {
-    @StateObject private var model = AppModel()
+    @StateObject private var model: AppModel
+    @StateObject private var unlock: UnlockCoordinator
     @Environment(\.scenePhase) private var phase
 
     init() {
@@ -40,11 +41,17 @@ struct MacFaceGuardApp: App {
                 exit(1)
             }
         }
+        let model = AppModel()
+        let unlock = UnlockCoordinator()
+        // A câmera tem um dono por vez: o desbloqueio encerra a sessão do app antes de ligá-la.
+        unlock.beforeScan = { [weak model] in model?.stop(message: "Sessão encerrada para o desbloqueio facial") }
+        _model = StateObject(wrappedValue: model)
+        _unlock = StateObject(wrappedValue: unlock)
     }
 
     var body: some Scene {
         Window("MacFaceGuard", id: "main") {
-            ContentView(model: model)
+            ContentView(model: model, unlock: unlock)
                 .frame(minWidth: 1040, minHeight: 700)
                 .preferredColorScheme(.dark)
                 .onChange(of: phase) { _, phase in
@@ -59,6 +66,7 @@ struct MacFaceGuardApp: App {
                 }
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     model.stop()
+                    unlock.disarm()
                 }
                 .onDisappear { model.stop() }
                 .task {
@@ -71,13 +79,14 @@ struct MacFaceGuardApp: App {
         .defaultSize(width: 1140, height: 780)
         .windowResizability(.contentMinSize)
         MenuBarExtra("MacFaceGuard", systemImage: "faceid") {
-            GuardMenu(model: model)
+            GuardMenu(model: model, unlock: unlock)
         }
     }
 }
 
 private struct GuardMenu: View {
     @ObservedObject var model: AppModel
+    @ObservedObject var unlock: UnlockCoordinator
     @Environment(\.openWindow) private var openWindow
     var body: some View {
         Button("Abrir MacFaceGuard") {
@@ -86,19 +95,25 @@ private struct GuardMenu: View {
         }
         if model.active { Button("Desligar câmera") { model.stop() } }
         Divider()
-        Text("Cadastro facial local • experimental")
-        Button("Sair") { model.stop(); NSApp.terminate(nil) }.keyboardShortcut("q")
+        if unlock.armed {
+            Button("Desarmar desbloqueio facial") { unlock.disarm() }
+        } else if unlock.hasPassword {
+            Button("Armar desbloqueio facial") { Task { await unlock.arm() } }.disabled(unlock.busy)
+        }
+        Text(unlock.armed ? "Desbloqueio facial armado" : "Desbloqueio facial desarmado")
+        Button("Sair") { model.stop(); unlock.disarm(); NSApp.terminate(nil) }.keyboardShortcut("q")
     }
 }
 
-private let ink = Color(red: 0.055, green: 0.071, blue: 0.105)
-private let panel = Color(red: 0.09, green: 0.11, blue: 0.15)
-private let accent = Color(red: 0.40, green: 0.88, blue: 0.74)
+let ink = Color(red: 0.055, green: 0.071, blue: 0.105)
+let panel = Color(red: 0.09, green: 0.11, blue: 0.15)
+let accent = Color(red: 0.40, green: 0.88, blue: 0.74)
 /// Verde do anel de giro, no tom do cadastro de rosto dos iPhones recentes.
 let ringGreen = Color(red: 0.20, green: 0.84, blue: 0.40)
 
 struct ContentView: View {
     @ObservedObject var model: AppModel
+    @ObservedObject var unlock: UnlockCoordinator
     @State private var confirmDelete = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -114,23 +129,26 @@ struct ContentView: View {
                         Label("100% local", systemImage: "lock.shield.fill").font(.system(size: 12)).foregroundStyle(accent)
                     }
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(model.tab == "Privacidade" ? "Seu rosto. Seu controle." : "Um rosto. Só neste Mac.")
+                        Text(model.tab == "Privacidade" ? "Seu rosto. Seu controle." : model.tab == "Desbloqueio" ? "Olhe e entre." : "Um rosto. Só neste Mac.")
                             .font(.system(size: 34, weight: .semibold, design: .rounded))
-                        Text(model.tab == "Privacidade" ? "Veja o que é salvo e escolha o que permanece." : "Cadastre seu rosto para explorar a comparação visual com privacidade.")
+                        Text(model.tab == "Privacidade" ? "Veja o que é salvo e escolha o que permanece."
+                             : model.tab == "Desbloqueio" ? "Ao despertar o Mac bloqueado, o MacFaceGuard reconhece seu rosto e digita sua senha."
+                             : "Cadastre seu rosto para explorar a comparação visual com privacidade.")
                             .font(.system(size: 14)).foregroundStyle(.secondary)
                     }
                     HStack(spacing: 12) {
                         metric("CADASTRO", value: model.hasEnrollment ? "Protegido" : "Não cadastrado", icon: "person.crop.circle")
                         metric("ARMAZENAMENTO", value: "AES-256-GCM", icon: "lock.fill")
-                        metric("CÂMERA", value: model.active ? "Ligada · 2 análises/s" : "Desligada", icon: "camera")
+                        metric("CÂMERA", value: model.active || unlock.scanning ? "Ligada" : "Desligada", icon: "camera")
                     }
                     if model.tab == "Privacidade" { privacy }
+                    else if model.tab == "Desbloqueio" { UnlockPanel(unlock: unlock, hasEnrollment: model.hasEnrollment) }
                     else { capture }
                     HStack(alignment: .top, spacing: 12) {
                         Image(systemName: "flask.fill").foregroundStyle(.orange)
                         VStack(alignment: .leading, spacing: 5) {
-                            Text("Laboratório de comparação visual").font(.system(size: 13, weight: .semibold))
-                            Text("Ainda não há reconhecimento facial nem prova de vida validados. A comparação usa o EdgeFace XS e o anti-fraude MiniFASNet locais, mede valores informativos e não autoriza acesso. Este app não desbloqueia o macOS.")
+                            Text("Protótipo experimental").font(.system(size: 13, weight: .semibold))
+                            Text("A webcam 2D é mais fraca que o Face ID: o limiar de identidade e o anti-fraude MiniFASNet ainda não foram calibrados, e uma foto ou vídeo pode enganá-los. O desbloqueio facial só funciona se você armá-lo; desarmado, nada é digitado.")
                                 .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -156,6 +174,7 @@ struct ContentView: View {
             VStack(spacing: 6) {
                 nav("Cadastro", icon: "person.crop.rectangle.badge.plus")
                 nav("Comparação", icon: "viewfinder")
+                nav("Desbloqueio", icon: "lock.open")
                 nav("Privacidade", icon: "hand.raised")
             }
             Spacer()
@@ -164,7 +183,7 @@ struct ContentView: View {
                 Text("Sem conta, sem nuvem e sem gravação de fotos ou vídeos.")
                     .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             }.padding(14).background(ink, in: RoundedRectangle(cornerRadius: 12))
-            Text("v0.1.8 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
+            Text("v0.2.0 • Protótipo experimental").font(.system(size: 10)).foregroundStyle(.secondary)
         }.padding(20).frame(width: 230).frame(maxHeight: .infinity)
             .background(panel)
     }
