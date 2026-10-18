@@ -1,6 +1,6 @@
 # MacFaceGuard
 
-Laboratório nativo de cadastro facial local para macOS. Interface em português, câmera integrada sob consentimento, três posições de captura, descritores protegidos por AES-256-GCM e chave no Chaves com Touch ID.
+Experimento nativo de captura facial local para macOS. O foco atual é cadastrar descritores de imagem com consentimento e protegê-los no aparelho; o projeto ainda não implementa reconhecimento de identidade nem desbloqueio do Mac.
 
 ![Ilustração da interface do MacFaceGuard, com câmera desligada e cadastro inicial](docs/images/interface.svg)
 
@@ -76,3 +76,7 @@ Em **Privacidade**, exclua o cadastro com Touch ID e desative a abertura no logi
 - [Avaliação das referências open source](reports/avaliacao-open-source.md)
 
 Licença MIT para o código deste projeto. Frameworks Apple seguem seus próprios termos. Nenhum peso de terceiros é incluído.
+
+## Licença
+
+Código e documentação autorais sob [MIT](license).
