@@ -6,6 +6,7 @@ import MacFaceGuardCore
 
 // Vision e AVCaptureSession permanecem na fila serial; só observações imutáveis cruzam para a UI.
 struct FrameAnalysis: @unchecked Sendable {
+    // Identifica a execução da captura; não representa a identidade da pessoa no quadro.
     let run: UUID
     let count: Int
     let quality: Float
