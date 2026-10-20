@@ -18,13 +18,15 @@ O desbloqueio facial digita a senha guardada na tela de bloqueio; não altera lo
 
 Sem armar, nada muda: o app não toca a tela de bloqueio e a câmera fica desligada. A abertura automática inicia o app depois de entrar no macOS.
 
-**Desbloqueio facial (0.2.1, experimental, opcional).** Copiado do Glance (MIT; ilha do entalhe, animações, `KeystrokeInjector` e `LockMonitor` adaptados; a carinha foi recolorida de verde; aviso em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). O reconhecimento continua sendo o EdgeFace + MiniFASNet do MacFaceGuard. Na aba **Desbloqueio**:
+**Desbloqueio facial (0.2.2, experimental, opcional).** Copiado do Glance (MIT; ilha do entalhe, animações, `KeystrokeInjector` e `LockMonitor` adaptados; a carinha foi recolorida de verde; aviso em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). O reconhecimento continua sendo o EdgeFace + MiniFASNet do MacFaceGuard. Na aba **Desbloqueio**:
 
 1. Guarde a senha do Mac. Ela é conferida no diretório local (senha errada não é guardada), cifrada com AES-GCM e posta no Chaves; a chave exige Touch ID (`biometryCurrentSet`).
 2. Permita o MacFaceGuard em **Ajustes do Sistema → Privacidade e Segurança → Acessibilidade**, necessário para digitar.
 3. Clique em **Armar com Touch ID**. A chave fica só na memória até desarmar ou encerrar o app.
 
 Com o desbloqueio armado, ao bloquear o Mac, despertar a tela ou parar o descanso de tela com o Mac bloqueado, a ilha verde aparece no entalhe sobre a tela de bloqueio (janela no espaço SkyLight, API privada que pode quebrar em atualizações do macOS) e a câmera liga por até 15 s. Passar o cursor sobre a ilha tenta de novo, com resposta tátil; sem rosto ou com rosto recusado, ela tenta sozinha mais uma vez. A senha só é digitada (por eventos de teclado, seguida de Return) quando há exatamente um rosto, semelhança acima do limiar (padrão 0,50, ajustável de 0,35 a 0,80) em 2 quadros seguidos e o MiniFASNet indica rosto real em 3 seguidos; o bloqueio é relido logo antes de digitar. Suspeita de fraude, rosto errado por 2 s, mais de um rosto ou tempo esgotado desligam a câmera; depois de 3 rostos recusados no mesmo bloqueio, só a senha digitada.
+
+Senha e Touch ID continuam valendo enquanto o rosto é procurado: o primeiro que responder vence. A primeira tecla física apertada durante a procura desliga a câmera, recolhe a ilha e cancela a nova tentativa automática daquele bloqueio (passar o cursor sobre a ilha ainda chama o rosto de novo). Como a tela de bloqueio usa entrada segura, o app não vê as teclas, só o tempo desde a última tecla física. Se o Mac for desbloqueado por outro método (Touch ID ou senha), tudo para. Se o rosto vencer, o app confere de novo, logo antes de digitar, que ninguém apertou tecla, e antes de cada tecla injetada confere que a tela continua bloqueada; se o desbloqueio acontecer no meio, o resto (inclusive o Return) não é enviado. A ilha nunca pega o foco do campo de senha.
 
 **Risco:** uma webcam 2D é bem mais fraca que o Face ID. Foto, tela ou vídeo do seu rosto podem enganar o reconhecimento e o anti-fraude, cujos limiares não foram calibrados. Não use onde alguém possa ter interesse em entrar no seu Mac. Depois de reiniciar, o FileVault continua pedindo a senha.
 

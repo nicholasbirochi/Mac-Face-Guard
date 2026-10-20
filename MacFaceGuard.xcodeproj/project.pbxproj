@@ -40,6 +40,7 @@
 		D6186A170E218E459DF04CDF /* NotchGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84967BBA782774A7E3154564 /* NotchGeometry.swift */; };
 		E188A1F8BAF42830CBAB790A /* UnlockPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA76CFFA979178F664CAF927 /* UnlockPanel.swift */; };
 		E68E5A1344211084E082CEEC /* MacFaceGuardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400E5255CFEBDB37FB704958 /* MacFaceGuardApp.swift */; };
+		E703386FD17527A09219CEF2 /* UnlockRace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070BBE1C57D4C74CF44BF925 /* UnlockRace.swift */; };
 		F76B14D5440310215B822AC2 /* NotchSkyLight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82CBFB59C59ACBC7E7A1C6E7 /* NotchSkyLight.swift */; };
 		F83C1092DAD8F5967B199938 /* PresentationAttack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770EBB5490468962B06693A4 /* PresentationAttack.swift */; };
 		F8F77663827715326624C4FA /* PasswordVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A04A6DDC4EB9DD235A1A152 /* PasswordVault.swift */; };
@@ -71,6 +72,7 @@
 
 /* Begin PBXFileReference section */
 		00D0EB32F1DD8997AF70CF73 /* NotchPanelStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchPanelStyle.swift; sourceTree = "<group>"; };
+		070BBE1C57D4C74CF44BF925 /* UnlockRace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnlockRace.swift; sourceTree = "<group>"; };
 		0D066896D58EF6817F16DBCF /* NotchShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchShape.swift; sourceTree = "<group>"; };
 		0DAAB756C3C2B3C1CA233511 /* FaceGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceGeometry.swift; sourceTree = "<group>"; };
 		14B91581933043FB868B5306 /* MacFaceGuardCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MacFaceGuardCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -152,6 +154,7 @@
 				770EBB5490468962B06693A4 /* PresentationAttack.swift */,
 				B62A4BE0182047A36BC22D1A /* RotationRing.swift */,
 				9C18DE96983D9C4DB05BCA28 /* UnlockGate.swift */,
+				070BBE1C57D4C74CF44BF925 /* UnlockRace.swift */,
 			);
 			name = MacFaceGuardCore;
 			path = Sources/MacFaceGuardCore;
@@ -319,6 +322,7 @@
 				F83C1092DAD8F5967B199938 /* PresentationAttack.swift in Sources */,
 				5C65A8F9AB7C7F71EFE77C95 /* RotationRing.swift in Sources */,
 				ABB3FB86563F580FBA1F3D6E /* UnlockGate.swift in Sources */,
+				E703386FD17527A09219CEF2 /* UnlockRace.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

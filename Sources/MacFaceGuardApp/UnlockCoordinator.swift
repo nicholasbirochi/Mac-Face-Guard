@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import CoreGraphics
 @preconcurrency import AVFoundation
 import LocalAuthentication
 import QuartzCore
@@ -7,7 +8,8 @@ import MacFaceGuardCore
 
 /// Desbloqueio facial no estilo do Glance: ao bloquear ou despertar com a tela bloqueada, mostra a ilha no entalhe,
 /// liga a câmera por até 15 s, compara o rosto e, só com semelhança e anti-fraude aprovados, digita a senha guardada
-/// por Acessibilidade. Passar o cursor sobre a ilha tenta de novo.
+/// por Acessibilidade. Passar o cursor sobre a ilha tenta de novo. A senha digitada e o Touch ID continuam valendo
+/// durante a procura: o primeiro método que responder vence e o rosto sai do caminho (`UnlockRace`).
 @MainActor
 final class UnlockCoordinator: ObservableObject {
     @Published private(set) var armed = false
@@ -36,10 +38,12 @@ final class UnlockCoordinator: ObservableObject {
     private var extractor: EdgeFaceExtractor?
     private var detector: PresentationAttackDetector?
     private var gate: UnlockGate?
+    private var race: UnlockRace?
     private var run: UUID?
     private var pending: Task<Void, Never>?
     private var watchdog: Task<Void, Never>?
     private var autoRetry: Task<Void, Never>?
+    private var keyWatch: Task<Void, Never>?
     private var lastWake: TimeInterval = 0
     private var failures = 0
     private var autoRetried = false
@@ -219,7 +223,9 @@ final class UnlockCoordinator: ObservableObject {
         autoRetry = nil
         let operation = UUID()
         run = operation
-        gate = UnlockGate(threshold: threshold, started: CACurrentMediaTime())
+        let started = CACurrentMediaTime()
+        gate = UnlockGate(threshold: threshold, started: started)
+        race = UnlockRace(started: started)
         lastSimilarity = nil
         scanning = true
         status = "Tela bloqueada • procurando seu rosto"
@@ -233,10 +239,52 @@ final class UnlockCoordinator: ObservableObject {
             self.stopScan(message: "Tempo esgotado • passe o cursor no entalhe para tentar de novo")
             Task { await self.overlay.collapse() }
         }
+        // A tela de bloqueio usa entrada segura, então as teclas em si não são visíveis: só o tempo desde a última
+        // tecla física (HID), que basta para saber que alguém começou a digitar a senha.
+        keyWatch = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(120))
+                guard !Task.isCancelled, let self, self.run == operation else { return }
+                self.checkRace()
+            }
+        }
+    }
+
+    nonisolated private static func secondsSinceKey() -> TimeInterval {
+        CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: .keyDown)
+    }
+
+    /// Confere se a senha ou o Touch ID responderam antes do rosto. Devolve `true` se a procura pode continuar.
+    @discardableResult
+    private func checkRace() -> Bool {
+        guard scanning, var race else { return false }
+        let outcome = race.check(locked: LockMonitor.isScreenLocked, secondsSinceKey: Self.secondsSinceKey(),
+                                 now: CACurrentMediaTime())
+        self.race = race
+        switch outcome {
+        case .open, .faceWon: return true
+        case .yielded(let reason): yield(reason); return false
+        }
+    }
+
+    /// Outro método respondeu primeiro: câmera desligada, ilha recolhida e nenhuma nova tentativa automática neste
+    /// bloqueio. Passar o cursor no entalhe ainda pode chamar o rosto de novo.
+    private func yield(_ reason: UnlockRace.Yield) {
+        autoRetry?.cancel()
+        autoRetry = nil
+        autoRetried = true
+        switch reason {
+        case .typing:
+            stopScan(message: "Digitando a senha • rosto em espera")
+            Task { await overlay.collapse() }
+        case .unlocked:
+            stopScan(message: "Armado • Mac desbloqueado")
+            overlay.disarm()
+        }
     }
 
     private func receive(_ frame: FrameAnalysis) {
-        guard frame.run == run, scanning, var gate, let reference else { return }
+        guard frame.run == run, scanning, checkRace(), var gate, let reference else { return }
         if frame.count < 0 {
             stopScan(message: "Câmera indisponível • digite a senha")
             Task { await overlay.collapse() }
@@ -259,10 +307,19 @@ final class UnlockCoordinator: ObservableObject {
             stopScan(message: "Armado • Mac desbloqueado")
             overlay.disarm()
         case .unlock:
+            // O rosto só vence se ninguém digitou nem desbloqueou até este instante.
+            guard var race else { return }
+            let won = race.claimForFace(locked: LockMonitor.isScreenLocked, secondsSinceKey: Self.secondsSinceKey(),
+                                        now: CACurrentMediaTime())
+            self.race = race
+            guard won else {
+                if case .yielded(let reason) = race.outcome { yield(reason) }
+                return
+            }
             stopScan(message: "Rosto reconhecido • desbloqueando")
             typed = true
             overlay.finish(success: true)
-            type()
+            type(claimedAt: CACurrentMediaTime())
         }
     }
 
@@ -279,15 +336,20 @@ final class UnlockCoordinator: ObservableObject {
         guard !autoRetried else { return }
         autoRetried = true
         autoRetry?.cancel()
+        let scheduled = CACurrentMediaTime()
         autoRetry = Task { [weak self] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled, let self, LockMonitor.isScreenLocked, self.overlay.phase == .closed else { return }
+            // Quem começou a digitar durante a espera não tem a câmera religada por cima.
+            guard !UnlockRace.keyPressed(since: scheduled, secondsSinceKey: Self.secondsSinceKey(),
+                                         now: CACurrentMediaTime()) else { return }
             self.beginScan()
         }
     }
 
-    /// A senha só é lida aqui, digitada fora da thread principal e zerada em seguida.
-    private func type() {
+    /// A senha só é lida aqui, digitada fora da thread principal e zerada em seguida. Antes de cada tecla, confere que
+    /// a tela continua bloqueada; se o Touch ID ou a senha desbloquearem no meio, nada mais é enviado (nem o Return).
+    private func type(claimedAt: TimeInterval) {
         let vault = self.vault
         Task.detached(priority: .userInitiated) { [weak self] in
             var message: String?
@@ -296,7 +358,12 @@ final class UnlockCoordinator: ObservableObject {
                 defer { bytes.resetBytes(in: 0..<bytes.count) }
                 // Reconfere o bloqueio no último instante: nunca digitar a senha numa tela desbloqueada.
                 guard LockMonitor.isScreenLocked else { throw GuardError.message("A tela já estava desbloqueada.") }
-                try KeystrokeInjector.typeAndReturn(bytes)
+                // Alguém começou a digitar entre a vitória do rosto e a digitação: a vez é de quem digita.
+                guard !UnlockRace.keyPressed(since: claimedAt, secondsSinceKey: Self.secondsSinceKey(),
+                                             now: CACurrentMediaTime()) else {
+                    throw GuardError.message("Digitação cancelada: você começou a digitar a senha.")
+                }
+                try KeystrokeInjector.typeAndReturn(bytes) { LockMonitor.isScreenLocked }
             } catch {
                 message = (error as? GuardError)?.localizedDescription ?? "A digitação falhou."
             }
@@ -312,6 +379,9 @@ final class UnlockCoordinator: ObservableObject {
         pending = nil
         watchdog?.cancel()
         watchdog = nil
+        keyWatch?.cancel()
+        keyWatch = nil
+        race = nil
         if scanning || run != nil { camera.stop() }
         run = nil
         gate = nil

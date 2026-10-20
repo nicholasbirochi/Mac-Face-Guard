@@ -83,7 +83,8 @@ final class NotchWindowController {
     /// password field to receive keystrokes.
     func setInteractive(_ interactive: Bool, key: Bool = false) {
         wantsInteractive = interactive
-        window?.acceptsKey = interactive
+        // Na tela de bloqueio a ilha nunca vira key: o campo de senha do macOS fica com o foco.
+        window?.acceptsKey = interactive && key
         updateCursorPolling()
         guard interactive, key, let window else { return }
         NSApp.activate(ignoringOtherApps: true)
