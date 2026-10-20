@@ -326,9 +326,12 @@ final class OnboardingController {
     // MARK: - Panel sizing (read by NotchOverlayView)
 
     /// Read fresh off the preferred screen each time rather than cached, so it stays
-    /// correct across a display change mid-flow.
+    /// correct across a display change mid-flow. Same choice as the overlay window
+    /// (`NotchWindowController.currentGeometry`), simulated notch included.
     private var currentPanelStyle: NotchPanelStyle {
-        NotchGeometry.preferredScreen().map(NotchGeometry.forScreen)?.style ?? .notch
+        let simulatesNotch = GlanceSettings.shared.simulatesNotch
+        return NotchGeometry.preferredScreen()
+            .map { NotchGeometry.forScreen($0, simulatesNotch: simulatesNotch) }?.style ?? .notch
     }
 
     var panelSize: CGSize { OnboardingMetrics.panelSize(for: step, style: currentPanelStyle) }

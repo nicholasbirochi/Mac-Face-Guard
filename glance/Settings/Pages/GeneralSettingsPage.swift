@@ -103,6 +103,10 @@ struct GeneralSettingsPage: View {
                 UnlockTriggerPicker(selection: $settings.unlockTriggers, isEnabled: coordinator.isEnabled)
                 SettingsGroupDivider()
                 displayPicker()
+                SettingsGroupDivider()
+                SettingsRowContent(title: "Notch on displays without one") {
+                    GlanceToggle(isOn: $settings.simulatesNotch)
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
                 screens = NSScreen.screens

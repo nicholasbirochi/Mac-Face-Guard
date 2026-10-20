@@ -4,8 +4,9 @@
 //
 //  SwiftUI root hosted inside the fixed-size NotchWindow — only content moves/resizes.
 //  Two silhouettes per screen (see NotchPanelStyle): `.notch` sits on the physical
-//  cutout; `.pill` is a detached island that slides on/off screen (and docks in place
-//  on the lock screen instead of sliding).
+//  cutout, or on a display without one draws a simulated notch flush with the top
+//  edge (`GlanceSettings.simulatesNotch`); `.pill` is a detached island that slides
+//  on/off screen (and docks in place on the lock screen instead of sliding).
 //
 //  Enter/exit choreography (pill only, see `scheduleChoreography()`) staggers slide vs.
 //  expansion using real `Task.sleep` delays on separate `@State` mirrors, not two

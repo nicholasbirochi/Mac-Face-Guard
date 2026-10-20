@@ -9,12 +9,15 @@ import AppKit
 import CoreGraphics
 
 struct NotchGeometry {
-    /// Physical notch's own dimensions, or `pillClosedSize`.
+    /// Physical notch's own dimensions, `simulatedNotchSize`, or `pillClosedSize`.
     let closedSize: CGSize
     /// True if this screen has a real physical notch (vs. the pill fallback).
     let isPhysicalNotch: Bool
+    /// True on a display without a notch when Glance draws one itself, flush with
+    /// the top edge like Alcove's simulated notch, instead of the detached pill.
+    var isSimulatedNotch: Bool = false
 
-    var style: NotchPanelStyle { isPhysicalNotch ? .notch : .pill }
+    var style: NotchPanelStyle { isPhysicalNotch || isSimulatedNotch ? .notch : .pill }
 
     /// Footprint of expanded scan-mode content in notch style. Sized for the
     /// square (432x432) scan animation plus breathing room. The width is only a floor:
@@ -55,7 +58,18 @@ struct NotchGeometry {
         style == .notch ? topRadius * 2 : 0
     }
 
-    // MARK: - Pill style (non-notched displays) — EDIT HERE
+    // MARK: - Simulated notch (non-notched displays) — EDIT HERE
+    //
+    // Default on displays without a notch (`GlanceSettings.simulatesNotch`): the
+    // panel keeps the notch silhouette, attached to the top edge, so it lines up
+    // with Alcove's simulated notch. Measured on an external display through
+    // Accessibility: Alcove's tabs are 35x29pt at y = 1 and leave a 70pt body
+    // between them, which is this width plus `alcoveNotchWidthAdjust` (-2pt);
+    // 1pt above and below the tabs gives the height.
+
+    static let simulatedNotchSize = CGSize(width: 72, height: 31)
+
+    // MARK: - Pill style (non-notched displays, simulated notch off) — EDIT HERE
     //
     // The dynamic-island fallback. Collapsed it's a capsule; expanded it's a
     // floating rounded rectangle sized by `pillOpenSize` in scan mode, or
@@ -213,16 +227,19 @@ struct NotchGeometry {
         }
     }
 
-    static func forMainScreen() -> NotchGeometry {
+    static func forMainScreen(simulatesNotch: Bool = false) -> NotchGeometry {
         guard let screen = NSScreen.main else {
-            return NotchGeometry(closedSize: pillClosedSize, isPhysicalNotch: false)
+            return withoutNotch(simulatesNotch: simulatesNotch)
         }
-        return forScreen(screen)
+        return forScreen(screen, simulatesNotch: simulatesNotch)
     }
 
-    static func forScreen(_ screen: NSScreen) -> NotchGeometry {
+    /// - Parameter simulatesNotch: on a display without a notch, draw a simulated
+    ///   one flush with the top edge instead of the detached pill. Ignored when
+    ///   the display has a real notch.
+    static func forScreen(_ screen: NSScreen, simulatesNotch: Bool = false) -> NotchGeometry {
         guard screen.safeAreaInsets.top > 0 else {
-            return NotchGeometry(closedSize: pillClosedSize, isPhysicalNotch: false)
+            return withoutNotch(simulatesNotch: simulatesNotch)
         }
 
         // Width derived from the menu-bar areas flanking the notch — nil/empty on
@@ -236,6 +253,12 @@ struct NotchGeometry {
         let height = screen.safeAreaInsets.top
 
         return NotchGeometry(closedSize: CGSize(width: width, height: height), isPhysicalNotch: true)
+    }
+
+    static func withoutNotch(simulatesNotch: Bool) -> NotchGeometry {
+        simulatesNotch
+            ? NotchGeometry(closedSize: simulatedNotchSize, isPhysicalNotch: false, isSimulatedNotch: true)
+            : NotchGeometry(closedSize: pillClosedSize, isPhysicalNotch: false)
     }
 
     /// Picks the screen the overlay should show on. If a display is pinned
