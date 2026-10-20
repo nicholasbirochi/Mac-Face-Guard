@@ -121,7 +121,8 @@ final class NotchOverlayController {
         updateInteractivity()
 
         guard geometry.style == .pill else {
-            // The notch silhouette has nowhere to travel from — it's on top of hardware already there.
+            // The notch silhouette has nowhere to travel from — it's on top of hardware
+            // already there, or (simulated notch) already attached to the top edge.
             isPillDocked = true
             return
         }

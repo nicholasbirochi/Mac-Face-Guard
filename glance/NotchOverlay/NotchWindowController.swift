@@ -102,7 +102,9 @@ final class NotchWindowController {
     }
 
     var currentGeometry: NotchGeometry {
-        NotchGeometry.preferredScreen().map(NotchGeometry.forScreen) ?? NotchGeometry.forMainScreen()
+        let simulatesNotch = GlanceSettings.shared.simulatesNotch
+        return NotchGeometry.preferredScreen().map { NotchGeometry.forScreen($0, simulatesNotch: simulatesNotch) }
+            ?? NotchGeometry.forMainScreen(simulatesNotch: simulatesNotch)
     }
 
     // MARK: - Click-through outside the visible panel

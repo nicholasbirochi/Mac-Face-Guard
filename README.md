@@ -95,6 +95,13 @@ Alcove**: a largura do entalhe, −2 pt, mais uma aba de 35 pt de cada lado (268
 200 pt). Antes ele tinha 220 pt, e as abas do Alcove apareciam dos dois lados. Os valores ficam em
 `NotchGeometry.swift`, na seção "Match the Alcove island".
 
+Em telas **sem entalhe** (monitor externo), o Glance original mostrava uma pílula solta, um quadrado arredondado
+afastado do topo. Agora ele desenha um **entalhe simulado**, colado na borda de cima, como o entalhe simulado do
+Alcove (`forceSimulatedNotch`). Medido pela Acessibilidade num monitor externo: 72 × 31 pt, o que dá, com o −2 pt,
+o corpo de 70 pt entre as abas de 35 × 29 pt do Alcove. Na facial, o painel abre a partir desse entalhe, com
+220 pt de largura. A pílula continua disponível: desligue **Notch on displays without one** em Settings → General.
+Os valores ficam em `NotchGeometry.swift`, na seção "Simulated notch".
+
 ## Antes de usar
 
 - **Não arme este Glance junto com o MacFaceGuard ou com o Glance original.** Dois apps digitando senha na mesma tela
@@ -147,6 +154,12 @@ Para testar a corrida entre senha, Touch ID e rosto:
 
 ```bash
 swiftc -o /tmp/unlock_race_selftest glance/UnlockRace.swift tools/unlock_race_selftest.swift && /tmp/unlock_race_selftest
+```
+
+Para testar o entalhe simulado e a pílula em telas sem entalhe:
+
+```bash
+swiftc -o /tmp/notch_geometry_selftest glance/NotchOverlay/NotchGeometry.swift glance/NotchOverlay/NotchPanelStyle.swift glance/Onboarding/OnboardingMetrics.swift tools/notch_geometry_selftest.swift && /tmp/notch_geometry_selftest
 ```
 
 O teste do anti-fraude está descrito no cabeçalho de `tools/liveness_selftest.swift`.

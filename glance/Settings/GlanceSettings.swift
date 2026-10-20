@@ -117,6 +117,7 @@ final class GlanceSettings {
         static let hapticFeedbackEnabled = "GlanceSettings.hapticFeedbackEnabled"
         static let showsInMenuBar = "GlanceSettings.showsInMenuBar"
         static let preferredDisplayID = "GlanceSettings.preferredDisplayID"
+        static let simulatesNotch = "GlanceSettings.simulatesNotch"
         static let preferredDisplayName = "GlanceSettings.preferredDisplayName"
         static let autoLockIntervalDays = "GlanceSettings.autoLockIntervalDays"
         static let defaultCameraID = "GlanceSettings.defaultCameraID"
@@ -237,6 +238,12 @@ final class GlanceSettings {
     var preferredDisplayID: String? {
         didSet { defaults.set(preferredDisplayID, forKey: Key.preferredDisplayID) }
     }
+    /// On a display without a notch (an external monitor), draw a notch flush
+    /// with the top edge, matching Alcove's simulated notch, instead of the
+    /// detached pill. Read through `NotchGeometry.forScreen(_:simulatesNotch:)`.
+    var simulatesNotch: Bool {
+        didSet { defaults.set(simulatesNotch, forKey: Key.simulatesNotch) }
+    }
     /// The chosen display's name at pick time — cosmetic only, so the row can
     /// show something recognizable when that display is disconnected.
     var preferredDisplayName: String? {
@@ -336,6 +343,7 @@ final class GlanceSettings {
         showsInMenuBar = defaults.object(forKey: Key.showsInMenuBar) as? Bool ?? true
         preferredDisplayID = defaults.string(forKey: Key.preferredDisplayID)
         preferredDisplayName = defaults.string(forKey: Key.preferredDisplayName)
+        simulatesNotch = defaults.object(forKey: Key.simulatesNotch) as? Bool ?? true
 
         // Defaults to 30 days
         autoLockInterval = (defaults.object(forKey: Key.autoLockIntervalDays) as? Int)
