@@ -1,9 +1,14 @@
-# MacFaceGuard
+# Glance (fork verde)
 
-- Leia `readme.md`, `.ai/PROJECT_MAP.md` e `reports/STATUS_FINAL.md` antes de alterar o projeto.
-- Preserve a recusa por padrão. Feature prints não são reconhecimento de identidade; falta de modelo facial/PAD nunca autoriza acesso.
+- Fork do Glance (MIT, © 2026 Jonathan Zhou). Mantenha `LICENSE`, `THIRD_PARTY_NOTICES.md` e o crédito no README.
+- Leia o README antes de alterar. A seção "O que mudou" lista as proteções; nenhuma pode ser removida ou afrouxada.
+- Recusa por padrão: sem sessão aberta, tela bloqueada (conferida antes de ler e de digitar), rosto acima do limiar e
+  anti-fraude aprovado, nada é digitado. Falta de modelo nunca autoriza acesso.
+- Chave só no Chaves de proteção de dados, `.biometryCurrentSet`, `ThisDeviceOnly`, nunca sincronizada. Cada uso de
+  AES-GCM leva o rótulo da sua finalidade (`SecureCredentialManager.Purpose`).
+- Senha do Mac: conferida no diretório local antes de guardar, zerada após o uso, nunca em log, Git, chat ou serviço remoto.
 - Dados faciais, arquivos cifrados, chaves, capturas e logs privados nunca entram no Git ou em serviços remotos.
-- Não altere loginwindow, PAM, FileVault, TCC ou AuthorizationDB.
-- Senha do Mac (autorizada pelo proprietário em 18/10/2026): só cifrada no Chaves, com chave presa ao Touch ID, conferida no diretório local antes de guardar, e digitada por Acessibilidade apenas com o desbloqueio armado, a tela bloqueada, rosto acima do limiar e anti-fraude aprovado. Nunca em log, Git, chat ou serviço remoto.
-- Câmera exige ação, consentimento e permissão. Encerre ao sair, suspender e expirar a sessão.
-- Use APIs nativas e testes proporcionais. Não baixe pesos nem acrescente dependências sem necessidade e autorização.
+- Não altere loginwindow, PAM, FileVault, TCC ou AuthorizationDB. Sem atualizador remoto (Sparkle saiu de propósito).
+- Câmera só com ação, consentimento e permissão; encerre ao sair, suspender e expirar a sessão.
+- Não baixe pesos nem acrescente dependências sem autorização. O ArcFace é só para pesquisa não comercial.
+- Valide com o build Release e `swift tools/crypto_selftest.swift`. Mudou cifragem ou digitação, acrescente casos ali.
