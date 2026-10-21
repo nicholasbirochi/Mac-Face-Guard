@@ -14,6 +14,7 @@ enum KeychainError: LocalizedError {
     case unexpectedData
     case accessControlFailed(String)
     case authenticationFailed
+    case biometryUnavailable(String)
     case osStatus(OSStatus)
 
     var errorDescription: String? {
@@ -26,6 +27,8 @@ enum KeychainError: LocalizedError {
             return "Não foi possível criar a proteção do Chaves: \(msg)"
         case .authenticationFailed:
             return "O Touch ID foi cancelado ou não confirmou."
+        case .biometryUnavailable(let msg):
+            return msg
         case .osStatus(let status):
             let message = SecCopyErrorMessageString(status, nil) as String? ?? "OSStatus \(status)"
             return "Erro do Chaves: \(message)"
@@ -78,9 +81,29 @@ enum KeychainManager {
         case errSecItemNotFound:
             throw KeychainError.itemNotFound
         case errSecUserCanceled, errSecAuthFailed:
-            throw KeychainError.authenticationFailed
+            // Com a tampa do MacBook fechada (ou o Touch ID bloqueado) o Chaves devolve o mesmo erro de um cancelamento.
+            // Só depois da falha pergunta ao LocalAuthentication o motivo, para nunca barrar uma leitura que daria certo.
+            throw biometryUnavailableError() ?? KeychainError.authenticationFailed
         default:
             throw KeychainError.osStatus(status)
+        }
+    }
+
+    /// `nil` quando o Touch ID pode ser usado agora; senão, o erro com o motivo legível.
+    nonisolated static func biometryUnavailableError() -> KeychainError? {
+        var error: NSError?
+        if LAContext().canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) { return nil }
+        return .biometryUnavailable(biometryUnavailableMessage(code: error?.code))
+    }
+
+    nonisolated static func biometryUnavailableMessage(code: Int?) -> String {
+        switch code.flatMap(LAError.Code.init(rawValue:)) {
+        case .biometryNotEnrolled?:
+            return "Nenhuma digital cadastrada. Cadastre uma em Ajustes do Sistema → Touch ID e Senha."
+        case .biometryLockout?:
+            return "O Touch ID está bloqueado depois de várias tentativas. Bloqueie e desbloqueie o Mac com a senha, depois tente de novo."
+        default:
+            return "O Touch ID está indisponível agora. Com a tampa do MacBook fechada ele não funciona: abra a tampa ou use um Magic Keyboard com Touch ID."
         }
     }
 
