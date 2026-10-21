@@ -52,8 +52,16 @@ enum NotchGeometrySelfTest {
 
         // 3. Aberto na facial: nunca mais estreito que o piso do entalhe.
         let open = simulated.notchScanOpenSize
-        check(open.width == max(NotchGeometry.notchOpenSize.width, 72 - 2 + 35 * 2), "painel aberto respeita o piso de largura")
+        check(open.width == max(NotchGeometry.notchOpenSize.width, 72 - 2 + (35 + 6) * 2), "painel aberto respeita o piso de largura")
         check(open.width >= 140, "painel aberto cobre a ilha do Alcove (140 pt)")
+
+        // 3b. Entalhe físico de 208 pt: a ilha do Alcove tem 276 pt e o painel, 288 pt (6 pt a mais de cada lado).
+        let physical = NotchGeometry(closedSize: CGSize(width: 208, height: 32), isPhysicalNotch: true)
+        let physicalOpen = physical.notchScanOpenSize
+        check(physicalOpen.width == 288, "entalhe de 208 pt abre com 288 pt")
+        check((physicalOpen.width - (208 - 2 + 35 * 2)) / 2 == NotchGeometry.alcoveCoverMargin,
+              "painel passa \(NotchGeometry.alcoveCoverMargin) pt das abas do Alcove de cada lado")
+        check(NotchGeometry.windowSize(for: .notch).width >= physicalOpen.width, "janela comporta o painel de 288 pt")
 
         // 4. Desligado: volta a pílula solta de antes.
         let pill = NotchGeometry.withoutNotch(simulatesNotch: false)
