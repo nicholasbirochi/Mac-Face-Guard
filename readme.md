@@ -9,7 +9,7 @@
 <h3 align="center">Desbloqueio facial no Mac, com a carinha verde e cifragem reforçada</h3>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/licença-MIT-black.svg" alt="Licença MIT"></a>
+  <a href="license"><img src="https://img.shields.io/badge/licença-MIT-black.svg" alt="Licença MIT"></a>
   <img src="https://img.shields.io/badge/macOS-15%2B-black.svg" alt="macOS 15+">
   <img src="https://img.shields.io/badge/Swift-SwiftUI-black.svg" alt="Swift">
 </p>
@@ -166,7 +166,7 @@ O teste do anti-fraude está descrito no cabeçalho de `tools/liveness_selftest.
 
 ## Créditos e licença
 
-- Projeto original: **[Glance](https://github.com/jonnyoo/glance)** © 2026 Jonathan Zhou, licença [MIT](LICENSE).
+- Projeto original: **[Glance](https://github.com/jonnyoo/glance)** © 2026 Jonathan Zhou, licença [MIT](license).
 - Modelo ArcFace: [InsightFace](https://github.com/deepinsight/insightface). Os pesos são **somente para pesquisa não
   comercial**; veja [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - Física da janela do entalhe: [The Boring Notch](https://github.com/TheBoredTeam/boring.notch).
