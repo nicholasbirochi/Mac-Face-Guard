@@ -136,6 +136,10 @@ Os valores ficam em `NotchGeometry.swift`, na seção "Simulated notch".
 A sessão do Touch ID se fecha sozinha depois do tempo ocioso escolhido em Ajustes. O Face Lab, para testar o
 reconhecimento e o anti-fraude, abre em **Ajustes → Sobre** com cinco cliques no ícone.
 
+Com a tampa do MacBook fechada o Touch ID do notebook não funciona, então a sessão não abre. Nesse caso o app diz
+isso, em vez de "cancelado": abra a tampa ou use um Magic Keyboard com Touch ID. Digital não cadastrada e Touch ID
+bloqueado por tentativas também têm mensagem própria. A chave continua sem recurso à senha do Mac.
+
 ## Compilar
 
 Requisitos: macOS 15 ou mais novo e Xcode 26 ou mais novo.
@@ -160,6 +164,12 @@ Para testar o entalhe simulado e a pílula em telas sem entalhe:
 
 ```bash
 swiftc -o /tmp/notch_geometry_selftest glance/NotchOverlay/NotchGeometry.swift glance/NotchOverlay/NotchPanelStyle.swift glance/Onboarding/OnboardingMetrics.swift tools/notch_geometry_selftest.swift && /tmp/notch_geometry_selftest
+```
+
+Para testar as mensagens de Touch ID indisponível:
+
+```bash
+swiftc -o /tmp/keychain_message_selftest glance/KeychainManager.swift tools/keychain_message_selftest.swift && /tmp/keychain_message_selftest
 ```
 
 O teste do anti-fraude está descrito no cabeçalho de `tools/liveness_selftest.swift`.
