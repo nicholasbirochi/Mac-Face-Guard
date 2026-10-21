@@ -90,10 +90,11 @@ O ícone, o logo (`glance-logo.svg` e `appicon.png`) e a animação de abertura 
 olha para um lado e para o outro) perderam o cartão branco: agora são **só a carinha verde sobre fundo preto**, como a
 ilha na hora da facial. Nos demais pontos, o branco continua branco.
 
-Na tela de bloqueio, o painel da facial (estilo original, com entalhe) tem **a mesma largura da ilha do
-Alcove**: a largura do entalhe, −2 pt, mais uma aba de 35 pt de cada lado (268 pt num entalhe de
-200 pt). Antes ele tinha 220 pt, e as abas do Alcove apareciam dos dois lados. Os valores ficam em
-`NotchGeometry.swift`, na seção "Match the Alcove island".
+Na tela de bloqueio, o painel da facial (estilo original, com entalhe) **cobre a ilha do Alcove**: a
+largura do entalhe, −2 pt, mais uma aba de 35 pt e uma folga de 6 pt de cada lado (288 pt num entalhe
+de 208 pt, contra 276 pt da ilha). Antes ele tinha 220 pt, e as abas do Alcove apareciam dos dois lados;
+com a largura exata, ainda sobravam uns 5 pt de cada aba. Os valores ficam em `NotchGeometry.swift`, na
+seção "Match the Alcove island".
 
 Em telas **sem entalhe** (monitor externo), o Glance original mostrava uma pílula solta, um quadrado arredondado
 afastado do topo. Agora ele desenha um **entalhe simulado**, colado na borda de cima, como o entalhe simulado do
