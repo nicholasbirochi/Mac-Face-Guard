@@ -1,7 +1,7 @@
 # Glance (fork verde)
 
-- Fork do Glance (MIT, © 2026 Jonathan Zhou). Mantenha `LICENSE`, `THIRD_PARTY_NOTICES.md` e o crédito no README.
-- Leia o README antes de alterar. A seção "O que mudou" lista as proteções; nenhuma pode ser removida ou afrouxada.
+- Fork do Glance (MIT, © 2026 Jonathan Zhou). Mantenha `license`, `THIRD_PARTY_NOTICES.md` e o crédito no `readme.md`.
+- Leia o `readme.md` antes de alterar. A seção "O que mudou" lista as proteções; nenhuma pode ser removida ou afrouxada.
 - Recusa por padrão: sem sessão aberta, tela bloqueada (conferida antes de ler e de digitar), rosto acima do limiar e
   anti-fraude aprovado, nada é digitado. Falta de modelo nunca autoriza acesso.
 - Chave só no Chaves de proteção de dados, `.biometryCurrentSet`, `ThisDeviceOnly`, nunca sincronizada. Cada uso de
