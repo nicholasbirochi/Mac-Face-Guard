@@ -3,7 +3,7 @@
 ## Glance
 
 Código, animações e desenho originais: [jonnyoo/glance](https://github.com/jonnyoo/glance), commit `b97f521`.
-Licença MIT, © 2026 Jonathan Zhou. O texto completo está em [LICENSE](LICENSE) e precisa acompanhar qualquer cópia.
+Licença MIT, © 2026 Jonathan Zhou. O texto completo está em [license](license) e precisa acompanhar qualquer cópia.
 
 Alterações deste fork: cor (azul → verde), ícone do app, reforço de cifragem, Chaves e digitação, remoção do Sparkle e textos em
 português. Veja o README.

@@ -9,7 +9,7 @@
 <h3 align="center">Desbloqueio facial no Mac, com a carinha verde e cifragem reforçada</h3>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/licença-MIT-black.svg" alt="Licença MIT"></a>
+  <a href="license"><img src="https://img.shields.io/badge/licença-MIT-black.svg" alt="Licença MIT"></a>
   <img src="https://img.shields.io/badge/macOS-15%2B-black.svg" alt="macOS 15+">
   <img src="https://img.shields.io/badge/Swift-SwiftUI-black.svg" alt="Swift">
 </p>
@@ -90,10 +90,11 @@ O ícone, o logo (`glance-logo.svg` e `appicon.png`) e a animação de abertura 
 olha para um lado e para o outro) perderam o cartão branco: agora são **só a carinha verde sobre fundo preto**, como a
 ilha na hora da facial. Nos demais pontos, o branco continua branco.
 
-Na tela de bloqueio, o painel da facial (estilo original, com entalhe) tem **a mesma largura da ilha do
-Alcove**: a largura do entalhe, −2 pt, mais uma aba de 35 pt de cada lado (268 pt num entalhe de
-200 pt). Antes ele tinha 220 pt, e as abas do Alcove apareciam dos dois lados. Os valores ficam em
-`NotchGeometry.swift`, na seção "Match the Alcove island".
+Na tela de bloqueio, o painel da facial (estilo original, com entalhe) **cobre a ilha do Alcove**: a
+largura do entalhe, −2 pt, mais uma aba de 35 pt e uma folga de 6 pt de cada lado (288 pt num entalhe
+de 208 pt, contra 276 pt da ilha). Antes ele tinha 220 pt, e as abas do Alcove apareciam dos dois lados;
+com a largura exata, ainda sobravam uns 5 pt de cada aba. Os valores ficam em `NotchGeometry.swift`, na
+seção "Match the Alcove island".
 
 Em telas **sem entalhe** (monitor externo), o Glance original mostrava uma pílula solta, um quadrado arredondado
 afastado do topo. Agora ele desenha um **entalhe simulado**, colado na borda de cima, como o entalhe simulado do
@@ -136,6 +137,10 @@ Os valores ficam em `NotchGeometry.swift`, na seção "Simulated notch".
 A sessão do Touch ID se fecha sozinha depois do tempo ocioso escolhido em Ajustes. O Face Lab, para testar o
 reconhecimento e o anti-fraude, abre em **Ajustes → Sobre** com cinco cliques no ícone.
 
+Com a tampa do MacBook fechada o Touch ID do notebook não funciona, então a sessão não abre. Nesse caso o app diz
+isso, em vez de "cancelado": abra a tampa ou use um Magic Keyboard com Touch ID. Digital não cadastrada e Touch ID
+bloqueado por tentativas também têm mensagem própria. A chave continua sem recurso à senha do Mac.
+
 ## Compilar
 
 Requisitos: macOS 15 ou mais novo e Xcode 26 ou mais novo.
@@ -162,11 +167,17 @@ Para testar o entalhe simulado e a pílula em telas sem entalhe:
 swiftc -o /tmp/notch_geometry_selftest glance/NotchOverlay/NotchGeometry.swift glance/NotchOverlay/NotchPanelStyle.swift glance/Onboarding/OnboardingMetrics.swift tools/notch_geometry_selftest.swift && /tmp/notch_geometry_selftest
 ```
 
+Para testar as mensagens de Touch ID indisponível:
+
+```bash
+swiftc -o /tmp/keychain_message_selftest glance/KeychainManager.swift tools/keychain_message_selftest.swift && /tmp/keychain_message_selftest
+```
+
 O teste do anti-fraude está descrito no cabeçalho de `tools/liveness_selftest.swift`.
 
 ## Créditos e licença
 
-- Projeto original: **[Glance](https://github.com/jonnyoo/glance)** © 2026 Jonathan Zhou, licença [MIT](LICENSE).
+- Projeto original: **[Glance](https://github.com/jonnyoo/glance)** © 2026 Jonathan Zhou, licença [MIT](license).
 - Modelo ArcFace: [InsightFace](https://github.com/deepinsight/insightface). Os pesos são **somente para pesquisa não
   comercial**; veja [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 - Física da janela do entalhe: [The Boring Notch](https://github.com/TheBoredTeam/boring.notch).

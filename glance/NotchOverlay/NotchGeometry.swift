@@ -31,14 +31,19 @@ struct NotchGeometry {
     // default (-2pt) and, while it shows a live activity such as its lock-screen
     // one, adds a tab on each side. Measured at 35pt per tab through Accessibility.
     // With the panel narrower than that, the tabs showed on both sides of it.
+    // At the exact width about 5pt of each tab still showed past the panel's
+    // rounded edges, so the panel adds `alcoveCoverMargin` on each side.
 
     static let alcoveNotchWidthAdjust: CGFloat = -2
     static let alcoveWingWidth: CGFloat = 35
+    static let alcoveCoverMargin: CGFloat = 6
 
-    /// Scan-mode footprint in notch style: as wide as the Alcove island on this
-    /// notch (268pt on a 200pt housing), never narrower than `notchOpenSize`.
+    /// Scan-mode footprint in notch style: the Alcove island on this notch plus
+    /// `alcoveCoverMargin` per side (288pt on a 208pt housing), never narrower
+    /// than `notchOpenSize`.
     var notchScanOpenSize: CGSize {
-        let alcoveWidth = closedSize.width + Self.alcoveNotchWidthAdjust + Self.alcoveWingWidth * 2
+        let alcoveWidth = closedSize.width + Self.alcoveNotchWidthAdjust
+            + (Self.alcoveWingWidth + Self.alcoveCoverMargin) * 2
         return CGSize(
             width: max(Self.notchOpenSize.width, alcoveWidth),
             height: Self.notchOpenSize.height
@@ -199,7 +204,7 @@ struct NotchGeometry {
     //
     // Created once and never resized afterward (see NotchWindow.swift). Each style is
     // floored to its own scan-mode footprint and gets its own shadow margin, tuned independently.
-    // The Alcove-width scan footprint (268pt on a 200pt housing) stays well under the
+    // The Alcove-width scan footprint (288pt on a 208pt housing) stays well under the
     // onboarding floor (`OnboardingMetrics.maxPanelWidth`), so it needs no extra room.
 
     /// Extra margin so SwiftUI's `.shadow()` isn't clipped (the window itself has
